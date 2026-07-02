@@ -1,0 +1,16 @@
+/* CSS custom properties used by Tailwind theme colors */
+:root{
+  --primary: #0ea5a4; /* teal-500 */
+  --accent-neon: #06b6d4;
+  --background: #0f172a;
+  --surface-card: #0b1220;
+  --surface-glass: rgba(255,255,255,0.02);
+  --on-surface: #e6eef6;
+  --on-surface-variant: #9aa6b2;
+  --input-bg: rgba(255,255,255,0.02);
+  --input-border: rgba(255,255,255,0.06);
+}
+
+.dark{
+  --background: #0b1220;
+}

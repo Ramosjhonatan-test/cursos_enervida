@@ -1,0 +1,565 @@
+<template>
+  <div v-if="estudiante" class="space-y-10 animate-fade-in text-on-surface">
+    <!-- Header with Back Button -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div class="flex items-center gap-6">
+        <button @click="$router.back()" class="w-11 h-11 rounded-xl bg-on-surface/10 flex items-center justify-center text-on-surface/60 hover:bg-on-surface/20 transition-all" title="Volver">
+          <span class="material-symbols-outlined text-xl">arrow_back</span>
+        </button>
+        <div>
+          <h2 class="text-3xl font-black text-on-surface font-lexend tracking-tighter">Detalle del <span class="text-accent-neon italic">Estudiante</span></h2>
+          <p class="text-on-surface/40 mt-1 text-xs font-bold uppercase tracking-widest">Expediente académico y actividad reciente</p>
+        </div>
+      </div>
+      <div class="flex gap-4">
+        <button @click="toggleStatus" :class="['btn-premium !py-4 gap-2', estudiante.estado === 'ACTIVO' ? 'btn-secondary-glass hover:!text-red-500' : 'btn-primary-neon']">
+          <span class="material-symbols-outlined text-sm">{{ estudiante.estado === 'ACTIVO' ? 'block' : 'check_circle' }}</span>
+          {{ estudiante.estado === 'ACTIVO' ? 'Desactivar Cuenta' : 'Activar Cuenta' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Left Column: Profile Card -->
+      <div class="lg:col-span-1 space-y-8">
+        <div class="glass-card p-10 rounded-[40px] text-center relative overflow-hidden">
+          <div class="relative z-10">
+            <div class="w-32 h-32 rounded-[40px] bg-on-surface/5 p-1 mx-auto mb-6 shadow-2xl overflow-hidden group">
+              <img :src="estudiante.imagen_perfil || 'https://i.pravatar.cc/150?u=' + estudiante.id" class="w-full h-full object-cover rounded-[32px] group-hover:scale-110 transition-transform duration-700" />
+            </div>
+            <h3 class="text-2xl font-black text-on-surface font-lexend leading-tight">{{ estudiante.nombres }} {{ estudiante.apellidos }}</h3>
+            <p class="text-accent-neon font-black text-[10px] uppercase tracking-[0.3em] mt-2">{{ estudiante.rol?.nombre }}</p>
+            
+            <div class="mt-10 space-y-4 text-left">
+              <div class="flex items-center gap-4 p-4 rounded-2xl bg-on-surface/5">
+                <span class="material-symbols-outlined text-on-surface/40">mail</span>
+                <span class="text-xs font-bold text-on-surface/60">{{ estudiante.correo }}</span>
+              </div>
+              <div class="flex items-center gap-4 p-4 rounded-2xl bg-on-surface/5">
+                <span class="material-symbols-outlined text-on-surface/40">calendar_today</span>
+                <div class="flex flex-col">
+                  <span class="text-[9px] font-black text-on-surface/30 uppercase tracking-widest">Miembro desde</span>
+                  <span class="text-xs font-bold text-on-surface/60">{{ new Date(estudiante.fecha_creacion).toLocaleDateString() }}</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-4 p-4 rounded-2xl bg-on-surface/5">
+                <span class="material-symbols-outlined text-on-surface/40">login</span>
+                <div class="flex flex-col">
+                  <span class="text-[9px] font-black text-on-surface/30 uppercase tracking-widest">Último acceso</span>
+                  <span class="text-xs font-bold text-on-surface/60">{{ estudiante.ultimo_login ? new Date(estudiante.ultimo_login).toLocaleString() : 'Nunca' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="absolute -top-10 -right-10 w-40 h-40 bg-accent-neon/5 rounded-full blur-3xl"></div>
+        </div>
+
+        <!-- Registered Device Info -->
+        <div class="glass-card p-10 rounded-[40px]">
+          <div class="flex justify-between items-center mb-6">
+            <h4 class="text-sm font-black text-on-surface uppercase tracking-widest">Seguridad / Dispositivo</h4>
+            <span v-if="estudiante.dispositivos?.length" class="flex h-2 w-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+          </div>
+
+          <div v-if="estudiante.dispositivos?.length" class="space-y-6">
+            <div v-for="dev in estudiante.dispositivos" :key="dev.id" class="p-4 rounded-2xl bg-on-surface/5">
+              <div class="flex items-center gap-3 mb-3">
+                <span class="material-symbols-outlined text-accent-neon text-lg">
+                  {{ getDeviceIcon(dev.sistema_operativo) }}
+                </span>
+                <span class="text-xs font-black text-on-surface">{{ dev.nombre_dispositivo || 'Dispositivo Vinculado' }}</span>
+              </div>
+              <div class="space-y-2">
+                <p class="text-[10px] text-on-surface/40 font-bold uppercase flex justify-between">
+                  <span>Navegador:</span>
+                  <span class="text-on-surface/60">{{ dev.navegador }}</span>
+                </p>
+                <p class="text-[10px] text-on-surface/40 font-bold uppercase flex justify-between">
+                  <span>S.O:</span>
+                  <span class="text-on-surface/60">{{ dev.sistema_operativo }}</span>
+                </p>
+                <p class="text-[10px] text-on-surface/40 font-bold uppercase flex justify-between">
+                  <span>Última IP:</span>
+                  <span class="text-on-surface/60">{{ dev.direccion_ip || 'N/A' }}</span>
+                </p>
+                <p class="text-[10px] text-on-surface/40 font-bold uppercase flex justify-between">
+                  <span>Activo desde:</span>
+                  <span class="text-on-surface/60">{{ new Date(dev.fecha_creacion).toLocaleDateString() }}</span>
+                </p>
+              </div>
+            </div>
+
+            <button @click="liberateDevices" class="w-full py-4 rounded-xl bg-red-500/10 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all flex items-center justify-center gap-2">
+              <span class="material-symbols-outlined text-sm">lock_open</span>
+              Liberar Cuenta (Desvincular)
+            </button>
+            <p class="text-[8px] text-on-surface/30 text-center uppercase font-bold leading-relaxed">
+              Al liberar la cuenta, el estudiante podrá vincular un nuevo dispositivo en su próximo inicio de sesión.
+            </p>
+          </div>
+          
+          <div v-else class="text-center py-10">
+            <span class="material-symbols-outlined text-on-surface/10 text-4xl mb-2">devices_off</span>
+            <p class="text-[10px] font-black text-on-surface/20 uppercase tracking-widest">Sin dispositivos vinculados</p>
+          </div>
+        </div>
+
+        <!-- Recent Activity Logs -->
+        <div class="glass-card p-10 rounded-[40px]">
+          <div class="flex justify-between items-center mb-8">
+            <h4 class="text-sm font-black text-on-surface uppercase tracking-widest">Actividad Reciente</h4>
+            <button @click="toggleAllLogs" class="text-[9px] font-black text-accent-neon uppercase tracking-widest hover:underline">
+              {{ allLogsExpanded ? 'Contraer Todo' : 'Expandir Todo' }}
+            </button>
+          </div>
+          
+          <div class="max-h-[500px] overflow-y-auto pr-2 space-y-4 custom-scrollbar">
+            <div v-for="(logs, date) in logsAgrupados" :key="date" class="space-y-3">
+              <button @click="toggleLogGroup(date)" class="w-full flex items-center gap-4 group py-1 sticky top-0 bg-surface/80 backdrop-blur-md z-10">
+                <span class="text-[9px] font-black text-accent-neon uppercase tracking-[0.2em] whitespace-nowrap">{{ date }}</span>
+                <div class="h-px w-full bg-on-surface/10"></div>
+                <span class="material-symbols-outlined text-xs text-on-surface/20 group-hover:text-accent-neon transition-transform" :class="{ 'rotate-180': expandedGroups[date] }">expand_more</span>
+              </button>
+              
+              <div v-if="expandedGroups[date]" class="space-y-4 pl-2 animate-slide-down">
+                <div v-for="log in logs" :key="log.id" class="flex gap-4 group">
+                  <div class="w-1.5 h-1.5 rounded-full bg-on-surface/20 mt-1.5 group-hover:bg-accent-neon transition-colors shrink-0 shadow-[0_0_5px_transparent] group-hover:shadow-accent-neon/50"></div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-[11px] font-bold text-on-surface/80 group-hover:text-on-surface transition-colors leading-tight break-words">{{ log.accion }}</p>
+                    <div class="flex items-center gap-2 mt-1">
+                      <p class="text-[9px] text-on-surface/40 uppercase font-medium">{{ new Date(log.fecha_creacion).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }}</p>
+                      <span v-if="log.direccion_ip" class="text-[8px] text-on-surface/20 font-mono">{{ log.direccion_ip }}</span>
+                    </div>
+                    <p v-if="log.descripcion" class="text-[9px] text-on-surface/30 mt-1 italic line-clamp-2 hover:line-clamp-none transition-all">{{ log.descripcion }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p v-if="!estudiante.auditoria_logs?.length" class="text-center py-6 text-on-surface/20 text-[10px] font-black uppercase tracking-widest">Sin registros</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Courses and Grades -->
+      <div class="lg:col-span-2 space-y-8">
+        <!-- Enrolled Courses -->
+        <div class="glass-card p-10 rounded-[40px]">
+          <div class="flex justify-between items-center mb-10">
+            <h4 class="text-xl font-black font-lexend tracking-tighter italic">Cursos <span class="text-accent-neon">Inscritos</span></h4>
+            <span class="px-3 py-1 bg-accent-neon/10 text-accent-neon text-[10px] font-black rounded-full">
+              {{ estudiante.inscripciones?.length || 0 }} Total
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div v-for="ins in estudiante.inscripciones" :key="ins.id" class="p-6 rounded-[32px] bg-on-surface/5 group hover:bg-on-surface/[0.08] transition-all">
+              <div class="flex justify-between items-start mb-4">
+                <div class="w-12 h-12 rounded-xl bg-on-surface/10 overflow-hidden shrink-0">
+                  <img :src="getImageUrl(ins.curso.miniatura_url)" class="w-full h-full object-cover" />
+                </div>
+                <div class="flex flex-col items-end gap-2">
+                  <span :class="['px-2 py-0.5 text-[8px] font-black rounded-md uppercase tracking-widest', ins.estado === 'ACTIVO' ? 'bg-green-500/20 text-green-500' : 'bg-yellow-500/20 text-yellow-500']">
+                    {{ ins.estado }}
+                  </span>
+                  <button v-if="ins.estado === 'PENDIENTE'" @click="approveEnrollment(ins.id)" class="px-3 py-1.5 bg-emerald-500/10 text-emerald-500 text-[9px] font-black rounded-lg hover:bg-emerald-600 hover:text-white transition-all uppercase tracking-wider">
+                    Aprobar Pago
+                  </button>
+                </div>
+              </div>
+              <h5 class="text-sm font-black text-on-surface mb-4 line-clamp-1 group-hover:text-accent-neon transition-colors">{{ ins.curso.titulo }}</h5>
+              <div class="flex justify-between items-end mb-2">
+                <span class="text-[9px] font-black text-on-surface/30 uppercase tracking-widest">Progreso</span>
+                <span class="text-xs font-black text-accent-neon">{{ Math.round(ins.porcentaje_progreso) }}%</span>
+              </div>
+              <div class="h-1.5 bg-on-surface/10 rounded-full overflow-hidden">
+                <div class="h-full bg-accent-neon rounded-full shadow-[0_0_10px_var(--accent-neon)] transition-all duration-1000" :style="{ width: ins.porcentaje_progreso + '%' }"></div>
+              </div>
+            </div>
+            <div v-if="!estudiante.inscripciones?.length" class="col-span-full py-20 text-center text-on-surface/20 bg-on-surface/[0.03] rounded-[32px]">
+               <span class="material-symbols-outlined text-4xl mb-2">auto_stories</span>
+               <p class="text-[10px] font-black uppercase tracking-widest">No está inscrito en ningún curso</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Evaluation Attempts -->
+        <div class="glass-card p-10 rounded-[40px]">
+          <h4 class="text-xl font-black font-lexend tracking-tighter italic mb-10">Historial de <span class="text-accent-neon">Evaluaciones</span></h4>
+          
+          <div class="overflow-x-auto">
+            <table class="w-full text-left">
+              <thead>
+                <tr class="bg-on-surface/[0.03]">
+                  <th class="pb-6 text-[10px] font-black text-on-surface/40 uppercase tracking-widest">Evaluación</th>
+                  <th class="pb-6 text-[10px] font-black text-on-surface/40 uppercase tracking-widest">Nota</th>
+                  <th class="pb-6 text-[10px] font-black text-on-surface/40 uppercase tracking-widest">Estado</th>
+                  <th class="pb-6 text-[10px] font-black text-on-surface/40 uppercase tracking-widest">Fecha</th>
+                  <th class="pb-6 text-[10px] font-black text-on-surface/40 uppercase tracking-widest text-right">Detalle</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="intento in estudiante.intentos_evaluacion" :key="intento.id" class="group hover:bg-on-surface/5 transition-colors">
+                  <td class="py-6">
+                    <p class="text-xs font-black text-on-surface group-hover:text-accent-neon transition-colors">{{ intento.evaluacion.titulo }}</p>
+                  </td>
+                  <td class="py-6">
+                    <span :class="['text-sm font-black', intento.aprobado ? 'text-green-500' : 'text-red-500']">{{ intento.nota || '0.00' }}</span>
+                  </td>
+                  <td class="py-6">
+                    <span :class="['px-3 py-1 text-[9px] font-black rounded-full uppercase tracking-widest', intento.aprobado ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500']">
+                      {{ intento.aprobado ? 'Aprobado' : 'Reprobado' }}
+                    </span>
+                  </td>
+                  <td class="py-6 text-[10px] text-on-surface/40 font-bold uppercase">{{ new Date(intento.fecha_fin || intento.fecha_inicio).toLocaleDateString() }}</td>
+                  <td class="py-6 text-right">
+                    <button @click="showAttemptDetail(intento)" class="px-3 py-1.5 bg-accent-neon/10 text-accent-neon text-[9px] font-black rounded-lg hover:bg-accent-neon hover:text-primary transition-all uppercase tracking-wider">
+                      Ver Respuestas
+                    </button>
+                  </td>
+                </tr>
+                <tr v-if="!estudiante.intentos_evaluacion?.length">
+                  <td colspan="5" class="py-20 text-center text-on-surface/20">
+                    <p class="text-[10px] font-black uppercase tracking-widest">No ha realizado evaluaciones aún</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detail Attempt Modal -->
+    <div v-if="showModalDetail && selectedAttempt" class="fixed inset-0 bg-background/80 backdrop-blur-xl z-[250] flex items-center justify-center p-4">
+      <div class="glass-card max-w-4xl w-full max-h-[90vh] flex flex-col rounded-[32px] overflow-hidden shadow-2xl relative border border-on-surface/10 bg-background">
+        
+        <!-- Modal Header -->
+        <div class="p-6 md:p-8 border-b border-on-surface/5 flex items-center justify-between">
+          <div>
+            <h3 class="text-xl font-black text-on-surface font-lexend tracking-tight">
+              Detalle del Intento: <span class="text-accent-neon">{{ selectedAttempt.evaluacion.titulo }}</span>
+            </h3>
+            <p class="text-xs text-on-surface/40 mt-1 uppercase font-bold tracking-wider">
+              Realizado el {{ new Date(selectedAttempt.fecha_fin || selectedAttempt.fecha_inicio).toLocaleString() }}
+            </p>
+          </div>
+          <button @click="closeModalDetail" class="w-10 h-10 rounded-xl bg-on-surface/5 flex items-center justify-center text-on-surface/40 hover:bg-red-500/10 hover:text-red-500 transition-all">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <!-- Modal Content -->
+        <div class="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 custom-scrollbar">
+          
+          <!-- Attempt Summary Badges -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 p-6 rounded-2xl bg-on-surface/5">
+            <div>
+              <p class="text-[9px] font-black text-on-surface/30 uppercase tracking-widest">Nota obtenida</p>
+              <p :class="['text-2xl font-black mt-1', selectedAttempt.aprobado ? 'text-green-500' : 'text-red-500']">
+                {{ Math.round(selectedAttempt.nota) }}%
+              </p>
+            </div>
+            <div>
+              <p class="text-[9px] font-black text-on-surface/30 uppercase tracking-widest">Aprobación Mínima</p>
+              <p class="text-2xl font-black text-on-surface mt-1">
+                {{ Math.round(selectedAttempt.evaluacion.nota_aprobacion) }}%
+              </p>
+            </div>
+            <div>
+              <p class="text-[9px] font-black text-on-surface/30 uppercase tracking-widest">Estado</p>
+              <div>
+                <span :class="['inline-block mt-2 px-3 py-1 text-[9px] font-black rounded-full uppercase tracking-widest', selectedAttempt.aprobado ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500']">
+                  {{ selectedAttempt.aprobado ? 'Aprobado' : 'Reprobado' }}
+                </span>
+              </div>
+            </div>
+            <div>
+              <p class="text-[9px] font-black text-on-surface/30 uppercase tracking-widest">Duración</p>
+              <p class="text-sm font-bold text-on-surface/60 mt-2">
+                {{ calculateDuration(selectedAttempt.fecha_inicio, selectedAttempt.fecha_fin) }}
+              </p>
+            </div>
+          </div>
+
+          <!-- No answers warning -->
+          <div v-if="!selectedAttempt.respuestas_seleccionadas" class="text-center py-10 bg-yellow-500/5 rounded-2xl border border-yellow-500/10">
+            <span class="material-symbols-outlined text-yellow-500 text-4xl mb-2">warning</span>
+            <p class="text-xs font-black text-yellow-500 uppercase tracking-widest">Detalle no disponible</p>
+            <p class="text-xs text-on-surface/40 mt-1 max-w-md mx-auto">
+              Este intento fue realizado antes de la actualización que guarda las respuestas seleccionadas del estudiante.
+            </p>
+          </div>
+
+          <!-- Questions Breakdown -->
+          <div v-else class="space-y-6">
+            <h4 class="text-sm font-black text-on-surface uppercase tracking-widest">Desglose de preguntas</h4>
+            
+            <div v-for="(pregunta, qIdx) in selectedAttempt.evaluacion.preguntas" :key="pregunta.id" class="p-6 rounded-[24px] bg-on-surface/5 border border-on-surface/5 space-y-4">
+              <div class="flex items-start justify-between gap-4">
+                <div class="flex-1">
+                  <span class="text-[10px] font-black text-accent-neon uppercase tracking-wider">Pregunta {{ qIdx + 1 }} ({{ pregunta.puntos }} pts)</span>
+                  <h5 class="text-sm font-bold text-on-surface mt-1 leading-relaxed">{{ pregunta.pregunta }}</h5>
+                </div>
+                
+                <!-- Badge: Correct / Incorrect / No Answer -->
+                <span v-if="selectedAttempt.respuestas_seleccionadas[pregunta.id] === undefined" class="px-2.5 py-1 text-[9px] font-black rounded-full uppercase tracking-wider bg-on-surface/10 text-on-surface/40 shrink-0">
+                  Sin responder
+                </span>
+                <span v-else-if="isQuestionCorrect(pregunta, selectedAttempt.respuestas_seleccionadas)" class="px-2.5 py-1 text-[9px] font-black rounded-full uppercase tracking-wider bg-green-500/10 text-green-500 flex items-center gap-1 shrink-0">
+                  <span class="material-symbols-outlined text-[10px] font-black">check</span> Correcto
+                </span>
+                <span v-else class="px-2.5 py-1 text-[9px] font-black rounded-full uppercase tracking-wider bg-red-500/10 text-red-500 flex items-center gap-1 shrink-0">
+                  <span class="material-symbols-outlined text-[10px] font-black">close</span> Incorrecto
+                </span>
+              </div>
+
+              <!-- Options Grid -->
+              <div class="grid grid-cols-1 gap-2.5">
+                <div 
+                  v-for="resp in pregunta.respuestas" 
+                  :key="resp.id"
+                  :class="[
+                    'flex items-center gap-3 p-3.5 rounded-xl text-xs transition-all border',
+                    (resp.es_correcta === true || resp.es_correcta == 1)
+                      ? 'bg-green-500/5 border-green-500/20 text-green-400 font-bold'
+                      : (Number(selectedAttempt.respuestas_seleccionadas[pregunta.id]) === Number(resp.id))
+                        ? 'bg-red-500/5 border-red-500/20 text-red-400 font-bold'
+                        : 'bg-on-surface/[0.02] border-transparent text-on-surface/50'
+                  ]"
+                >
+                  <!-- Indicator icon -->
+                  <span class="material-symbols-outlined text-sm font-black shrink-0" :class="[
+                    (resp.es_correcta === true || resp.es_correcta == 1) ? 'text-green-500' : 'text-red-500'
+                  ]">
+                    {{ 
+                      (resp.es_correcta === true || resp.es_correcta == 1) 
+                        ? 'check_circle' 
+                        : (Number(selectedAttempt.respuestas_seleccionadas[pregunta.id]) === Number(resp.id)) 
+                          ? 'cancel' 
+                          : 'radio_button_unchecked' 
+                    }}
+                  </span>
+                  
+                  <div class="flex-1 min-w-0 leading-relaxed">
+                    {{ resp.respuesta }}
+                  </div>
+
+                  <!-- Student choice badge -->
+                  <span v-if="Number(selectedAttempt.respuestas_seleccionadas[pregunta.id]) === Number(resp.id)" class="text-[8px] font-black uppercase tracking-wider bg-on-surface/10 px-2 py-0.5 rounded text-on-surface/60 shrink-0">
+                    Elección del estudiante
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="p-6 border-t border-on-surface/5 flex justify-end">
+          <button @click="closeModalDetail" class="btn-premium btn-secondary-glass !py-3 !px-6">
+            Cerrar Detalle
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div v-if="loading" class="fixed inset-0 bg-background/60 backdrop-blur-md z-[200] flex items-center justify-center">
+      <div class="flex flex-col items-center gap-6">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-accent-neon shadow-[0_0_20px_var(--accent-neon)]"></div>
+        <p class="text-[10px] font-black text-accent-neon uppercase tracking-[0.4em]">Cargando Expediente...</p>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
+import api from '@/services/api'
+import { useNotificationStore } from '@/stores/notificationStore'
+import { useModalStore } from '@/stores/modalStore'
+
+const notificationStore = useNotificationStore()
+const modalStore = useModalStore()
+
+const route = useRoute()
+const estudiante = ref(null)
+const loading = ref(true)
+const expandedGroups = ref({})
+const allLogsExpanded = ref(false)
+
+const showModalDetail = ref(false)
+const selectedAttempt = ref(null)
+
+const showAttemptDetail = (intento) => {
+  selectedAttempt.value = intento
+  showModalDetail.value = true
+}
+
+const closeModalDetail = () => {
+  showModalDetail.value = false
+  selectedAttempt.value = null
+}
+
+const isQuestionCorrect = (pregunta, respuestasSeleccionadas) => {
+  if (!respuestasSeleccionadas) return false
+  const selectedId = respuestasSeleccionadas[pregunta.id]
+  if (!selectedId) return false
+  const selectedResp = pregunta.respuestas.find(r => Number(r.id) === Number(selectedId))
+  return selectedResp ? (selectedResp.es_correcta === true || selectedResp.es_correcta == 1) : false
+}
+
+const calculateDuration = (start, end) => {
+  if (!start || !end) return 'N/A'
+  const startTime = new Date(start)
+  const endTime = new Date(end)
+  const diffMs = endTime - startTime
+  if (isNaN(diffMs) || diffMs < 0) return 'N/A'
+  const diffSecs = Math.floor(diffMs / 1000)
+  const mins = Math.floor(diffSecs / 60)
+  const secs = diffSecs % 60
+  if (mins === 0) return `${secs}s`
+  return `${mins}m ${secs}s`
+}
+
+const toggleLogGroup = (date) => {
+  expandedGroups.value[date] = !expandedGroups.value[date]
+}
+
+const toggleAllLogs = () => {
+  allLogsExpanded.value = !allLogsExpanded.value
+  Object.keys(logsAgrupados.value).forEach(date => {
+    expandedGroups.value[date] = allLogsExpanded.value
+  })
+}
+
+const getDeviceIcon = (os) => {
+  const osLower = os?.toLowerCase() || ''
+  if (osLower.includes('windows')) return 'desktop_windows'
+  if (osLower.includes('android')) return 'phone_android'
+  if (osLower.includes('ios') || osLower.includes('iphone') || osLower.includes('ipad')) return 'phone_iphone'
+  if (osLower.includes('mac')) return 'desktop_mac'
+  if (osLower.includes('linux')) return 'terminal'
+  return 'devices'
+}
+
+const liberateDevices = async () => {
+  modalStore.openModal({
+    title: '¿Liberar Cuenta?',
+    message: 'Se desvincularán todos los dispositivos actuales. El estudiante podrá registrar uno nuevo al iniciar sesión.',
+    confirmText: 'Liberar Ahora',
+    type: 'warning',
+    onConfirm: async () => {
+      try {
+        loading.value = true
+        await api.patch(`/dispositivos-usuario/liberate/${estudiante.value.id}`)
+        notificationStore.addNotification({
+          title: 'Cuenta Liberada',
+          message: 'Los dispositivos han sido desvinculados exitosamente.',
+          type: 'success'
+        })
+        await fetchEstudiante()
+      } catch (error) {
+        console.error('Error liberating devices:', error)
+        notificationStore.addNotification({
+          title: 'Error de Seguridad',
+          message: 'No se pudo completar la desvinculación.',
+          type: 'error'
+        })
+      } finally {
+        loading.value = false
+      }
+    }
+  })
+}
+
+const logsAgrupados = computed(() => {
+  if (!estudiante.value?.auditoria_logs) return {}
+  
+  const sortedLogs = [...estudiante.value.auditoria_logs].sort((a, b) => 
+    new Date(b.fecha_creacion) - new Date(a.fecha_creacion)
+  )
+
+  const groups = {}
+  sortedLogs.forEach(log => {
+    const date = new Date(log.fecha_creacion).toLocaleDateString('es-BO', { 
+      day: '2-digit', 
+      month: 'short', 
+      year: 'numeric' 
+    })
+    if (!groups[date]) {
+      groups[date] = []
+      // Inicializar como expandido si es el primer día o si ya estaba expandido
+      if (Object.keys(groups).length === 1 || allLogsExpanded.value) {
+        expandedGroups.value[date] = true
+      }
+    }
+    groups[date].push(log)
+  })
+  return groups
+})
+
+const fetchEstudiante = async () => {
+  loading.value = true
+  try {
+    const res = await api.get(`/usuarios/${route.params.id}`)
+    estudiante.value = res.data
+  } catch (error) {
+    console.error('Error fetching student detail:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+const toggleStatus = async () => {
+  try {
+    const newStatus = estudiante.value.estado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO'
+    await api.patch(`/usuarios/${estudiante.value.id}`, { estado: newStatus })
+    estudiante.value.estado = newStatus
+  } catch (error) {
+    console.error('Error toggling status:', error)
+  }
+}
+
+const approveEnrollment = async (inscripcionId) => {
+  modalStore.openModal({
+    title: '¿Confirmar Pago?',
+    message: '¿El estudiante ha realizado el pago correctamente para activar este curso?',
+    confirmText: 'Sí, Activar',
+    type: 'success',
+    onConfirm: async () => {
+      try {
+        await api.patch(`/inscripciones/${inscripcionId}`, { estado: 'ACTIVO' })
+        notificationStore.addNotification({
+          title: 'Inscripción Activada',
+          message: 'El estudiante ya tiene acceso total al curso.',
+          type: 'success'
+        })
+        fetchEstudiante()
+      } catch (error) {
+        console.error('Error approving enrollment:', error)
+        notificationStore.addNotification({
+          title: 'Error de Activación',
+          message: 'No se pudo procesar la aprobación del curso.',
+          type: 'error'
+        })
+      }
+    }
+  })
+}
+
+const getImageUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:3000').replace(/\/$/, '');
+  const cleanUrl = url.startsWith('/') ? url : `/${url}`;
+  return `${baseUrl}${cleanUrl}`;
+};
+
+onMounted(() => {
+  fetchEstudiante()
+})
+</script>

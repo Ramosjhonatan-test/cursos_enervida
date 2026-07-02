@@ -1,0 +1,699 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Fondo ligeramente más gris para resaltar las tarjetas blancas */
+    --background: #F3F4F6;
+    
+    /* Textos y Acentos (sin tocar según instrucción) */
+    --on-surface: #0F172A;
+    --on-surface-variant: #64748B;
+    --primary: #064e3b;
+    --accent-neon: #059669;
+    --accent-solar: #EAB308;
+    
+    /* Superficies en Blanco Puro */
+    --surface-container: #FFFFFF;
+    --surface-card: #FFFFFF;
+    --surface-glass: rgba(255, 255, 255, 0.9);
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    
+    /* Bordes y Sombras muy suaves */
+    --glass-border: #E5E7EB;
+    --input-bg: #FFFFFF;
+    --input-bg-focus: #FFFFFF;
+    --input-border: #E5E7EB;
+    
+    --admin-border: #E5E7EB;
+    --admin-border-strong: rgba(5, 150, 105, 0.22);
+    --admin-soft: rgba(255, 255, 255, 0.9);
+    --admin-soft-hover: rgba(15, 23, 42, 0.03);
+
+    /* Admin Surface Scale */
+    --admin-divider: rgba(0, 0, 0, 0.04);
+    --admin-table-header-bg: rgba(0, 0, 0, 0.025);
+    --admin-row-hover: rgba(0, 0, 0, 0.02);
+    --admin-table-bg: transparent;
+    
+    /* Sombra suave y difuminada para despegar del fondo gris */
+    --shadow-premium: 0 10px 40px -10px rgba(0, 0, 0, 0.06);
+    --admin-row-even: rgba(0, 0, 0, 0.015);
+    
+    --primary-container: #ecfdf5;
+    --secondary-container: #fefce8;
+    --tertiary-container: #f0f9ff;
+    --on-primary-container: #065f46;
+    --on-secondary-container: #854d0e;
+    --on-tertiary-container: #075985;
+    
+    --clay-surface: #F9FAFB;
+    --clay-surface-soft: #FFFFFF;
+    --clay-shadow-dark: rgba(0, 0, 0, 0.05);
+    --clay-shadow-light: #FFFFFF;
+  }
+
+  html.dark {
+    --background: #070b14;
+    --on-surface: #F3F7FA;
+    --on-surface-variant: #9AA8B8;
+    --primary: #10291f;
+    --accent-neon: #34D399;
+    --accent-solar: #F4C95D;
+    --surface-container: #121A2A;
+    --surface-card: rgba(18, 26, 42, 0.84);
+    --surface-glass: rgba(16, 24, 39, 0.84);
+    --glass-bg: rgba(18, 26, 42, 0.68);
+    --glass-border: rgba(148, 163, 184, 0.13);
+    --input-bg: rgba(148, 163, 184, 0.07);
+    --input-bg-focus: rgba(52, 211, 153, 0.08);
+    --input-border: rgba(148, 163, 184, 0.16);
+    --admin-border: rgba(148, 163, 184, 0.11);
+    --admin-border-strong: rgba(52, 211, 153, 0.26);
+    --admin-soft: rgba(148, 163, 184, 0.075);
+    --admin-soft-hover: rgba(148, 163, 184, 0.12);
+
+    /* Admin Surface Scale – Dark */
+    --admin-divider: rgba(148, 163, 184, 0.06);
+    --admin-table-header-bg: rgba(255, 255, 255, 0.03);
+    --admin-row-hover: rgba(255, 255, 255, 0.04);
+    --admin-row-even: rgba(255, 255, 255, 0.015);
+    --admin-table-bg: transparent;
+    --shadow-premium: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    --primary-container: #064e3b;
+    --secondary-container: #3f6212;
+    --tertiary-container: #0c4a6e;
+    --on-primary-container: #10ff9d;
+    --on-secondary-container: #fefce8;
+    --on-tertiary-container: #e0f2fe;
+    --clay-surface: #111827;
+    --clay-surface-soft: #172033;
+    --clay-shadow-dark: rgba(0, 0, 0, 0.48);
+    --clay-shadow-light: rgba(148, 163, 184, 0.05);
+  }
+
+  body {
+    @apply bg-background text-on-surface font-inter overflow-x-hidden transition-colors duration-500;
+    color-scheme: light;
+    /* Default */
+  }
+
+  html.dark body {
+    color-scheme: dark;
+    /* Force dark mode browser UI elements */
+  }
+
+  select option {
+    background-color: var(--surface-container);
+    color: var(--on-surface);
+  }
+}
+
+/* Transición de Tema Global */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 500ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Optimización para View Transitions API */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.5s;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Animaciones de Entrada Generales */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    transform: translateX(-50px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(50px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromTop {
+  from {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromBottom {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-in {
+  animation-duration: 1s;
+  /* Duración por defecto */
+  animation-fill-mode: backwards;
+  /* Aplicar estilos iniciales antes de animar */
+}
+
+.fade-in {
+  animation-name: fadeIn;
+}
+
+.slide-in-from-left {
+  animation-name: slideInFromLeft;
+}
+
+.slide-in-from-right {
+  animation-name: slideInFromRight;
+}
+
+.slide-in-from-top {
+  animation-name: slideInFromTop;
+}
+
+.slide-in-from-bottom {
+  animation-name: slideInFromBottom;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.5s infinite;
+}
+
+/* Estilos específicos de la landing */
+.mesh-gradient {
+  background-color: var(--background);
+  background-image:
+    radial-gradient(circle at 10% 10%, var(--accent-neon-dim, rgba(16, 185, 129, 0.03)) 0%, transparent 40%),
+    radial-gradient(circle at 90% 10%, var(--accent-solar-dim, rgba(234, 179, 8, 0.03)) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, var(--primary-dim, rgba(6, 78, 59, 0.02)) 0%, transparent 60%);
+  background-attachment: fixed;
+}
+
+.dark .mesh-gradient {
+  --accent-neon-dim: rgba(16, 255, 157, 0.08);
+  --accent-solar-dim: rgba(255, 215, 0, 0.05);
+  --primary-dim: rgba(6, 78, 59, 0.15);
+}
+
+@layer components {
+  .glass-premium {
+    background: var(--glass-bg);
+    backdrop-filter: blur(32px) saturate(200%);
+    border: 1px solid var(--glass-border);
+    transition: all 0.3s ease;
+  }
+
+  .glass-card {
+    background: linear-gradient(145deg, var(--surface-card) 0%, color-mix(in srgb, var(--surface-card) 80%, transparent) 100%);
+    backdrop-filter: blur(24px);
+    border: none;
+    box-shadow: var(--shadow-premium);
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .glass-card:hover {
+    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.15);
+  }
+
+  .dark .glass-card:hover {
+    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.5);
+  }
+
+  .btn-premium {
+    @apply px-8 py-4 rounded-full font-black uppercase tracking-widest text-[12px] transition-all duration-300 active:scale-95 flex items-center justify-center gap-2;
+  }
+
+  .btn-primary-neon {
+    background-color: var(--accent-neon);
+    color: var(--primary);
+    box-shadow: 0 0 20px var(--accent-neon);
+    transition: all 0.3s ease;
+  }
+
+  .btn-primary-neon:hover {
+    transform: scale(1.05);
+    filter: brightness(1.1);
+  }
+
+  .btn-secondary-glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(32px) saturate(200%);
+    border: 1px solid var(--glass-border);
+    color: var(--on-surface);
+    transition: all 0.3s ease;
+  }
+
+  .btn-secondary-glass:hover {
+    background: var(--glass-border);
+  }
+
+  .card-premium-hover {
+    @apply transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl;
+  }
+
+  .hover-neon-lift {
+    transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .hover-neon-lift:hover {
+    transform: translateY(-15px) scale(1.01);
+    box-shadow: 0 30px 70px -15px rgba(46, 204, 113, 0.25);
+  }
+
+  .dark .hover-neon-lift:hover {
+    box-shadow: 0 30px 80px -15px rgba(46, 204, 113, 0.4);
+  }
+
+  .hover-solar-lift {
+    transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .hover-solar-lift:hover {
+    transform: translateY(-15px) scale(1.01);
+    box-shadow: 0 30px 70px -15px rgba(234, 179, 8, 0.25);
+  }
+
+  .dark .hover-solar-lift:hover {
+    box-shadow: 0 30px 80px -15px rgba(234, 179, 8, 0.4);
+  }
+
+  .btn-primary-solar {
+    background-color: var(--accent-solar);
+    color: #000;
+    box-shadow: 0 0 20px rgba(234, 179, 8, 0.3);
+    transition: all 0.3s ease;
+  }
+
+  .btn-primary-solar:hover {
+    transform: scale(1.05);
+    filter: brightness(1.1);
+    box-shadow: 0 0 30px rgba(234, 179, 8, 0.5);
+  }
+
+  .input-cyber {
+    width: 100%;
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 1rem;
+    padding: 1rem 1.5rem;
+    color: var(--on-surface);
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+    outline: none;
+    border-left: 4px solid transparent;
+  }
+
+  .input-cyber:focus {
+    border-left-color: var(--accent-neon);
+    background-color: rgba(0, 0, 0, 0.05);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.1);
+  }
+
+  .dark .input-cyber:focus {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .glass-card-premium {
+    background: linear-gradient(145deg, var(--clay-surface-soft) 0%, var(--clay-surface) 100%);
+    border: none;
+    box-shadow:
+      10px 10px 24px -6px var(--clay-shadow-dark),
+      -10px -10px 24px -8px var(--clay-shadow-light);
+    transition: transform .24s ease, box-shadow .24s ease, border-color .24s ease;
+  }
+
+  .course-card-premium {
+    background: var(--surface-container);
+    border: none;
+    border-radius: 40px;
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.04);
+    transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .course-card-premium:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
+  }
+
+  .dark .course-card-premium {
+    background: color-mix(in srgb, var(--surface-container) 60%, transparent 40%);
+    border: none;
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.3);
+  }
+  
+  .dark .course-card-premium:hover {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  }
+
+  .glass-shell {
+    background:
+      linear-gradient(160deg, color-mix(in srgb, var(--surface-glass) 86%, transparent 14%) 0%, var(--clay-surface) 100%);
+    backdrop-filter: blur(24px) saturate(150%);
+    border: none;
+    box-shadow:
+      8px 8px 18px -8px var(--clay-shadow-dark),
+      -8px -8px 18px -10px var(--clay-shadow-light);
+  }
+
+  .admin-surface {
+    background:
+      radial-gradient(circle at 12% 8%, color-mix(in srgb, var(--accent-neon) 9%, transparent 91%) 0%, transparent 32%),
+      radial-gradient(circle at 85% 18%, color-mix(in srgb, var(--accent-solar) 8%, transparent 92%) 0%, transparent 28%),
+      linear-gradient(180deg, var(--background) 0%, color-mix(in srgb, var(--background) 92%, var(--clay-surface) 8%) 100%);
+  }
+
+  .dark .admin-surface {
+    background:
+      radial-gradient(circle at 18% -8%, rgba(52, 211, 153, 0.12) 0%, transparent 30%),
+      radial-gradient(circle at 88% 8%, rgba(96, 165, 250, 0.10) 0%, transparent 26%),
+      linear-gradient(135deg, #0b1220 0%, #101827 48%, #0d1524 100%);
+  }
+
+  .admin-card {
+    background: color-mix(in srgb, var(--surface-container) 84%, transparent 16%);
+    border: none;
+    box-shadow: 0 18px 45px -28px var(--clay-shadow-dark);
+    backdrop-filter: blur(18px);
+  }
+
+  .dark .admin-card {
+    background:
+      linear-gradient(180deg, rgba(20, 29, 46, 0.9) 0%, rgba(15, 23, 42, 0.82) 100%);
+    box-shadow:
+      0 22px 70px -44px rgba(0, 0, 0, 0.88);
+  }
+
+  .admin-line {
+    border-color: var(--admin-border);
+  }
+
+  .admin-line-strong {
+    border-color: var(--admin-border-strong);
+  }
+
+  .admin-soft-bg {
+    background: var(--admin-soft);
+  }
+
+  .admin-soft-hover:hover {
+    background: var(--admin-soft-hover);
+  }
+
+  .admin-chip {
+    background: color-mix(in srgb, var(--accent-neon) 12%, transparent 88%);
+    border: 1px solid color-mix(in srgb, var(--accent-neon) 32%, transparent 68%);
+    color: var(--accent-neon);
+  }
+
+  .glass-nav-link {
+    border: 1px solid transparent;
+    color: color-mix(in srgb, var(--on-surface) 64%, transparent 36%);
+    background: transparent;
+    transition: all .22s ease;
+  }
+
+  .glass-nav-link:hover {
+    background: color-mix(in srgb, var(--glass-bg) 82%, transparent 18%);
+    border-color: color-mix(in srgb, var(--glass-border) 55%, var(--accent-neon) 45%);
+    color: var(--on-surface);
+    transform: translateY(-1px);
+  }
+
+  .glass-nav-link-active {
+    background: linear-gradient(130deg, color-mix(in srgb, var(--accent-neon) 18%, var(--clay-surface) 82%) 0%, color-mix(in srgb, var(--accent-neon) 10%, var(--clay-surface-soft) 90%) 100%);
+    border: none;
+    color: var(--accent-neon);
+    box-shadow:
+      inset 2px 2px 8px color-mix(in srgb, var(--accent-neon) 18%, transparent 82%),
+      6px 6px 16px -8px var(--clay-shadow-dark),
+      -4px -4px 14px -10px var(--clay-shadow-light);
+  }
+
+  .panel-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: 2rem;
+    border: none;
+    background:
+      radial-gradient(circle at 12% 10%, color-mix(in srgb, var(--accent-neon) 12%, transparent 88%) 0%, transparent 45%),
+      radial-gradient(circle at 88% 15%, color-mix(in srgb, var(--accent-solar) 10%, transparent 90%) 0%, transparent 40%),
+      linear-gradient(145deg, var(--clay-surface-soft) 0%, var(--clay-surface) 100%);
+    box-shadow:
+      14px 14px 30px -16px var(--clay-shadow-dark),
+      -10px -10px 24px -16px var(--clay-shadow-light);
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   ADMIN TABLE & CARD NORMALIZATION
+   Eliminates hairlines, white-line artifacts, and
+   rendering quirks across all admin modules.
+   ═══════════════════════════════════════════════════ */
+
+/* Force all admin tables to border-separate with zero spacing
+   to avoid sub-pixel hairlines from border-collapse */
+.admin-surface table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+/* Strip any accidental borders from cells globally */
+.admin-surface table th,
+.admin-surface table td {
+  border: none;
+}
+
+/* Consistent table header background */
+.admin-surface table thead tr {
+  background: var(--admin-table-header-bg);
+}
+
+/* Kill divide-y / divide-on-surface hairlines on tbody
+   (Tailwind's divide-y sets border-top on all but first child) */
+.admin-surface table tbody tr {
+  border: none;
+}
+
+.admin-surface table tbody tr + tr {
+  border: none;
+}
+
+/* Consistent row hover and alternating backgrounds */
+.admin-surface table tbody tr:nth-child(even) {
+  background: var(--admin-row-even);
+}
+
+.admin-surface table tbody tr:hover {
+  background: var(--admin-row-hover);
+}
+
+/* Remove any border-bottom on thead rows */
+.admin-surface table thead tr {
+  border-bottom: none !important;
+}
+
+/* Admin card border cleanup — kill any Tailwind border overrides
+   on glass-card, glass-card-premium, admin-card inside admin-surface */
+.admin-surface .glass-card,
+.admin-surface .glass-card-premium,
+.admin-surface .admin-card {
+  border: none !important;
+}
+
+/* Ensure panel-hero never has visible border seams */
+.admin-surface .panel-hero {
+  border: none !important;
+}
+
+.text-gradient-neon {
+  background: linear-gradient(135deg, var(--accent-neon) 0%, var(--accent-solar) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.glow-neon {
+  box-shadow: 0 0 20px var(--accent-neon);
+}
+
+.glow-solar {
+  box-shadow: 0 0 20px var(--accent-solar);
+}
+
+.shadow-neon-sm {
+  box-shadow: 0 10px 30px -10px rgba(16, 185, 129, 0.3);
+}
+
+.shadow-solar-sm {
+  box-shadow: 0 10px 30px -10px rgba(234, 179, 8, 0.3);
+}
+
+.rounded-organic-1 {
+  border-radius: 60px 20px 60px 20px;
+}
+
+.rounded-organic-2 {
+  border-radius: 20px 60px 20px 60px;
+}
+
+.rounded-premium {
+  border-radius: 40px;
+}
+
+@keyframes pulse-subtle {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.8;
+    transform: scale(0.98);
+  }
+}
+
+.loading-pulse {
+  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--on-surface-variant);
+  border-radius: 10px;
+  opacity: 0.2;
+}
+
+.login-wrapper {
+  @apply min-h-screen flex items-center justify-center overflow-hidden relative w-full bg-background;
+}
+
+.student-page-header {
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+.student-page-eyebrow {
+  margin-bottom: 0.75rem;
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--accent-neon);
+}
+
+.student-page-title {
+  font-family: "Lexend", sans-serif;
+  font-size: clamp(2.25rem, 5vw, 4.5rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--on-surface);
+}
+
+.student-page-description {
+  margin-top: 1rem;
+  max-width: 46rem;
+  font-size: 0.95rem;
+  line-height: 1.75;
+  color: color-mix(in srgb, var(--on-surface) 56%, transparent 44%);
+}
+
+.student-stat-card {
+  border-radius: 1.75rem;
+  border: none;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface-container) 86%, transparent 14%) 0%, color-mix(in srgb, var(--background) 88%, var(--surface-container) 12%) 100%);
+  padding: 1.2rem 1.25rem;
+  box-shadow: 0 20px 45px -34px var(--clay-shadow-dark);
+  backdrop-filter: blur(12px);
+}
+
+.student-stat-label {
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--on-surface) 40%, transparent 60%);
+}
+
+.student-stat-value {
+  margin-top: 0.55rem;
+  font-family: "Lexend", sans-serif;
+  font-size: clamp(1.35rem, 2.5vw, 2rem);
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.student-stat-help {
+  margin-top: 0.9rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--on-surface) 50%, transparent 50%);
+}
+
+.student-panel {
+  border-radius: 2rem;
+  border: none;
+  background: color-mix(in srgb, var(--surface-container) 84%, transparent 16%);
+  box-shadow: 0 24px 60px -38px var(--clay-shadow-dark);
+  backdrop-filter: blur(18px);
+}
+
+.student-empty {
+  border-radius: 2rem;
+  border: none;
+  background:
+    radial-gradient(circle at top, color-mix(in srgb, var(--accent-neon) 8%, transparent 92%) 0%, transparent 40%),
+    color-mix(in srgb, var(--surface-container) 86%, transparent 14%);
+}
