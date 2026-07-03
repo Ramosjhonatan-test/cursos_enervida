@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Curso;
+use App\Services\AuditoriaService;
 
 class CursoController extends Controller
 {
@@ -45,6 +46,17 @@ class CursoController extends Controller
         ]);
 
         $curso = Curso::create($validated);
+
+        AuditoriaService::log(
+            auth('api')->id(),
+            'CREAR_CURSO',
+            'Curso',
+            $curso->id,
+            "Curso creado: '{$curso->titulo}'",
+            null,
+            $curso->toArray()
+        );
+
         return response()->json($curso, 201);
     }
 
@@ -63,7 +75,19 @@ class CursoController extends Controller
     public function update(Request $request, string $id)
     {
         $curso = Curso::findOrFail($id);
+        $anterior = $curso->toArray();
         $curso->update($request->all());
+
+        AuditoriaService::log(
+            auth('api')->id(),
+            'ACTUALIZAR_CURSO',
+            'Curso',
+            $curso->id,
+            "Curso actualizado: '{$curso->titulo}'",
+            $anterior,
+            $curso->toArray()
+        );
+
         return response()->json($curso);
     }
 
@@ -73,6 +97,9 @@ class CursoController extends Controller
     public function destroy(string $id)
     {
         $curso = Curso::findOrFail($id);
+
+        $titulo = $curso->titulo;
+        $cursoId = $curso->id;
 
         \Illuminate\Support\Facades\DB::transaction(function () use ($curso) {
             // 1. Delete Clases en Vivo and their Participantes
@@ -120,6 +147,14 @@ class CursoController extends Controller
             // 7. Delete the Course
             $curso->delete();
         });
+
+        AuditoriaService::log(
+            auth('api')->id(),
+            'ELIMINAR_CURSO',
+            'Curso',
+            $cursoId,
+            "Curso eliminado: '{$titulo}' — todos sus contenidos fueron eliminados."
+        );
 
         return response()->json(['message' => 'Curso y todos sus contenidos relacionados eliminados correctamente']);
     }

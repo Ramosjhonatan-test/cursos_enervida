@@ -8,6 +8,7 @@ use App\Models\Evaluacion;
 use App\Models\Certificado;
 use App\Models\Curso;
 use Illuminate\Support\Str;
+use App\Services\AuditoriaService;
 
 class IntentoEvaluacionController extends Controller
 {
@@ -70,6 +71,14 @@ class IntentoEvaluacionController extends Controller
             $responseData['certificado'] = $certificado;
         }
 
+        AuditoriaService::log(
+            $intento->usuario_id,
+            'COMPLETAR_EVALUACION',
+            'IntentoEvaluacion',
+            $intento->id,
+            "Evaluación completada: evaluacion_id={$intento->evaluacion_id} — nota={$intento->nota}% — " . ($intento->aprobado ? 'APROBADO' : 'REPROBADO') . ($certificado ? ' — Certificado generado: ' . $certificado->codigo_certificado : '')
+        );
+
         return response()->json($responseData, 201);
     }
 
@@ -87,7 +96,18 @@ class IntentoEvaluacionController extends Controller
 
     public function destroy($id)
     {
-        IntentoEvaluacion::findOrFail($id)->delete();
+        $intento = IntentoEvaluacion::findOrFail($id);
+
+        AuditoriaService::log(
+            auth('api')->id(),
+            'ELIMINAR_INTENTO_EVALUACION',
+            'IntentoEvaluacion',
+            $intento->id,
+            "Intento eliminado: usuario_id={$intento->usuario_id} evaluacion_id={$intento->evaluacion_id}",
+            $intento->toArray()
+        );
+
+        $intento->delete();
         return response()->json(['message' => 'Intento eliminado']);
     }
 

@@ -226,7 +226,9 @@
                 <button type="submit" :disabled="savingProfile" class="btn-premium btn-primary-neon !w-full !py-4 sm:!py-5 !text-[11px] font-black uppercase tracking-widest shadow-neon-sm">
                   {{ savingProfile ? 'Procesando...' : 'Confirmar datos y solicitar' }}
                 </button>
-                <button type="button" @click="showCompleteProfile = false" class="text-[10px] font-black uppercase tracking-[0.3em] text-on-surface/25 transition hover:text-on-surface">Posponer solicitud</button>
+                <button type="button" @click="cancelEnroll" class="btn-premium btn-primary-solar !w-full !py-4 sm:!py-5 !text-[11px] font-black uppercase tracking-widest shadow-neon-sm">
+                  Cancelar
+                </button>
               </div>
             </form>
           </div>
@@ -438,11 +440,9 @@ async function handleCompleteProfile() {
 }
 
 async function enrollInCourse(cursoId) {
-  // Si estamos en proceso de completar perfil, no hacemos nada más aquí
-  if (showCompleteProfile.value && !selectedCourseId.value) return
-
   const needsInfo = !authStore.user?.ci || !authStore.user?.telefono
-  if (needsInfo && !selectedCourseId.value) {
+
+  if (needsInfo) {
     selectedCourseId.value = cursoId
     profileForm.value.nombres = authStore.user?.nombres || ''
     profileForm.value.apellidos = authStore.user?.apellidos || ''
@@ -481,6 +481,11 @@ async function enrollInCourse(cursoId) {
     })
     selectedCourseId.value = null
   }
+}
+
+function cancelEnroll() {
+  showCompleteProfile.value = false
+  selectedCourseId.value = null
 }
 </script>
 

@@ -237,6 +237,7 @@ const listaModulos = [
   { id: 'CERTIFICADOS', label: 'Certificados', icon: 'workspace_premium' },
   { id: 'CLASES_VIVO', label: 'Clases en Vivo', icon: 'videocam' },
   { id: 'EVALUACIONES', label: 'Exámenes', icon: 'quiz' },
+  { id: 'CALIFICACIONES', label: 'Calificaciones', icon: 'star'},
   { id: 'SOLICITUDES', label: 'Solicitudes', icon: 'assignment' },
   { id: 'AUDITORIA', label: 'Logs de Auditoría', icon: 'policy' },
   { id: 'ROLES', label: 'Roles y Permisos', icon: 'settings_accessibility' },
@@ -245,6 +246,7 @@ const listaModulos = [
   { id: 'NOTIFICACIONES', label: 'Notificaciones', icon: 'notifications' },
   { id: 'REPORTES', label: 'Estadísticas', icon: 'query_stats' },
   { id: 'ARCHIVOS', label: 'Gestor Archivos', icon: 'folder_open' },
+  { id: 'VERIFICACIONES QR', label: 'Verificaciones', icon: 'qr_code' },
   { id: 'CONFIG', label: 'Ajustes Generales', icon: 'settings' }
 ];
 

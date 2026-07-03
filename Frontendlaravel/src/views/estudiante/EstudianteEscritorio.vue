@@ -280,7 +280,7 @@ function handleModalEnroll(course) {
 }
 
 const cursosActivos = computed(() => {
-  return props.inscripciones.filter(ins => ins.estado === 'activa')
+  return props.inscripciones.filter(ins => ins.estado === 'ACTIVO')
 })
 
 const cursosCompletados = computed(() => {

@@ -10,7 +10,7 @@
           </div>
           <span class="text-[10px] font-black text-accent-neon uppercase tracking-[0.3em]">Gestión de Admisiones</span>
         </div>
-        <h2 class="text-4xl md:text-5xl font-black text-on-surface font-lexend tracking-tighter">Solicitudes de <span class="text-accent-neon italic text-gradient-neon">Inscripción</span></h2>
+        <h2 class="text-4xl md:text-5xl font-black text-on-surface font-lexend tracking-tighter">Solicitudes de <span class="text-accent-neon  text-gradient-neon">Inscripción</span></h2>
         <p class="text-on-surface-variant mt-3 text-sm font-medium opacity-80 max-w-xl">Revisa, aprueba o rechaza las solicitudes de estudiantes para acceder a los programas de formación técnica.</p>
       </div>
     </div>
@@ -142,8 +142,10 @@
 import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
 import { useNotificationStore } from '@/stores/notificationStore'
+import { useSolicitudStore } from '@/stores/solicitudStore'
 
 const notificationStore = useNotificationStore()
+const solicitudStore = useSolicitudStore()
 
 const solicitudes = ref([])
 const loading = ref(true)
@@ -163,6 +165,8 @@ const fetchSolicitudes = async () => {
   try {
     const res = await api.get('/inscripciones')
     solicitudes.value = res.data
+    // Update global store count
+    solicitudStore.setPendingCount(pendingCount.value)
   } catch (error) {
     console.error('Error fetching solicitudes:', error)
   } finally {
@@ -178,6 +182,8 @@ const updateStatus = async (id, status) => {
     const sol = solicitudes.value.find(s => s.id === id)
     if (sol) {
       sol.estado = status
+      // Update global store count
+      solicitudStore.setPendingCount(pendingCount.value)
     }
     notificationStore.addNotification({
       title: status === 'ACTIVO' ? 'Solicitud Aprobada' : 'Solicitud Rechazada',

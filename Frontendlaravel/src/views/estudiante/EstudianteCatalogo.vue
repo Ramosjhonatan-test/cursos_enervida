@@ -64,7 +64,7 @@
               </div>
               <div class="flex flex-col sm:flex-row gap-2 w-full">
                 <button @click="openCourseDetails(curso)" class="w-full sm:w-1/2 text-[9px] sm:text-[10px] font-black uppercase tracking-widest py-3 sm:py-4 rounded-xl !border-none bg-on-surface/5 hover:bg-on-surface/10 hover:text-accent-neon transition-all text-center">
-                  Ver detalles
+                  Ver detalle
                 </button>
                 <button v-if="isEnrolled(curso.id)" disabled class="btn-premium w-full sm:w-1/2 flex items-center justify-center gap-2 !rounded-xl !py-3 sm:!py-4 !text-[9px] sm:!text-[10px] bg-on-surface/10 text-on-surface/50 !border-none cursor-not-allowed">
                   <span class="material-symbols-outlined text-sm">check_circle</span>

@@ -602,7 +602,7 @@
               </div>
 
               <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                <!-- Previous State -->
+                <!-- Previous State en formato JSON -->
                 <div class="space-y-4">
                   <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
@@ -610,11 +610,15 @@
                       <h4 class="text-[10px] font-black text-red-500 uppercase tracking-widest">Estado Completo Anterior</h4>
                     </div>
                   </div>
+                  
                   <div class="bg-[#050505] rounded-[32px] p-8 font-mono text-[11px] leading-relaxed overflow-x-auto min-h-[250px] shadow-inner relative group/code border-none">
                     <button @click="copyToClipboard(selectedLog.valores_anteriores)" v-if="selectedLog.valores_anteriores" class="absolute right-4 top-4 w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center opacity-0 group-hover/code:opacity-100 hover:bg-white/10 transition-all">
                       <span class="material-symbols-outlined text-sm">content_copy</span>
                     </button>
-                    <pre v-if="selectedLog.valores_anteriores" class="text-on-surface/40">{{ JSON.stringify(selectedLog.valores_anteriores, null, 2) }}</pre>
+                    <pre v-if="selectedLog.valores_anteriores" class="text-on-surface/40">{{ 
+                      JSON.stringify(JSON.parse(selectedLog.valores_anteriores), null, 2) 
+                    }}</pre>
+
                     <div v-else class="h-full flex flex-col items-center justify-center gap-4 opacity-10 py-20">
                       <span class="material-symbols-outlined text-6xl">history</span>
                       <p class="text-[10px] font-black uppercase tracking-widest">Sin registro previo</p>
@@ -622,7 +626,7 @@
                   </div>
                 </div>
 
-                <!-- New State -->
+                <!-- New State en formato JSON -->
                 <div class="space-y-4">
                   <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
@@ -634,7 +638,9 @@
                     <button @click="copyToClipboard(selectedLog.valores_nuevos)" v-if="selectedLog.valores_nuevos" class="absolute right-4 top-4 w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center opacity-0 group-hover/code:opacity-100 hover:bg-white/10 transition-all">
                       <span class="material-symbols-outlined text-sm">content_copy</span>
                     </button>
-                    <pre v-if="selectedLog.valores_nuevos" class="text-green-500/60">{{ JSON.stringify(selectedLog.valores_nuevos, null, 2) }}</pre>
+                   <pre v-if="selectedLog.valores_nuevos" class="text-green-500">{{ 
+                        JSON.stringify(JSON.parse(selectedLog.valores_nuevos), null, 2) 
+                   }}</pre>
                     <div v-else class="h-full flex flex-col items-center justify-center gap-4 opacity-10 py-20">
                       <span class="material-symbols-outlined text-6xl">data_object</span>
                       <p class="text-[10px] font-black uppercase tracking-widest">Sin mutación resultante</p>

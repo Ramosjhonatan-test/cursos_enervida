@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use App\Models\Usuario;
+use App\Services\AuditoriaService;
 
 class UsuarioController extends Controller
 {
@@ -38,6 +39,17 @@ class UsuarioController extends Controller
         unset($data['contrasena']);
 
         $usuario = Usuario::create($data);
+
+        AuditoriaService::log(
+            auth('api')->id(),
+            'CREAR_USUARIO',
+            'Usuario',
+            $usuario->id,
+            "Usuario creado: {$usuario->nombres} {$usuario->apellidos} ({$usuario->correo})",
+            null,
+            ['nombres' => $usuario->nombres, 'apellidos' => $usuario->apellidos, 'correo' => $usuario->correo, 'rol_id' => $usuario->rol_id]
+        );
+
         return response()->json($usuario, 201);
     }
 
@@ -77,14 +89,37 @@ class UsuarioController extends Controller
             unset($validated['contrasena']);
         }
 
+        $anterior = $usuario->only(['nombres', 'apellidos', 'correo', 'telefono', 'estado', 'ci', 'rol_id']);
+
         // Update only the fields that were validated (present in request)
         $usuario->update($validated);
+
+        AuditoriaService::log(
+            auth('api')->id(),
+            'ACTUALIZAR_USUARIO',
+            'Usuario',
+            $usuario->id,
+            "Usuario actualizado: {$usuario->nombres} {$usuario->apellidos} ({$usuario->correo})",
+            $anterior,
+            $usuario->only(['nombres', 'apellidos', 'correo', 'telefono', 'estado', 'ci', 'rol_id'])
+        );
+
         return response()->json($usuario->load('rol'));
     }
 
     public function destroy($id)
     {
         $usuario = Usuario::findOrFail($id);
+
+        AuditoriaService::log(
+            auth('api')->id(),
+            'ELIMINAR_USUARIO',
+            'Usuario',
+            $usuario->id,
+            "Usuario eliminado: {$usuario->nombres} {$usuario->apellidos} ({$usuario->correo})",
+            ['nombres' => $usuario->nombres, 'apellidos' => $usuario->apellidos, 'correo' => $usuario->correo, 'rol_id' => $usuario->rol_id]
+        );
+
         $usuario->delete();
         return response()->json(['message' => 'Usuario eliminado correctamente']);
     }

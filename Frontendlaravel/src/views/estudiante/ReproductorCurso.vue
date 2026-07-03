@@ -49,20 +49,23 @@
           <div v-for="(modulo, mIdx) in curso?.modulos" :key="modulo.id" class="space-y-2">
             <div class="flex items-center gap-3 px-3 py-2 opacity-60">
               <span class="text-[10px] font-black uppercase tracking-widest text-accent-solar">Modulo {{ mIdx + 1 }}</span>
+              <span v-if="isModuloBloqueado(mIdx)" class="material-symbols-outlined text-[14px] text-red-500/80" title="Debes completar el módulo anterior">lock</span>
               <div class="h-px flex-1 bg-on-surface/10"></div>
             </div>
-            <h3 class="px-3 text-xs font-black uppercase tracking-widest">{{ modulo.titulo }}</h3>
+            <h3 :class="['px-3 text-xs font-black uppercase tracking-widest', isModuloBloqueado(mIdx) ? 'text-on-surface/40' : '']">{{ modulo.titulo }}</h3>
 
             <div class="space-y-1">
               <button
                 v-for="leccion in modulo.lecciones"
                 :key="leccion.id"
                 type="button"
-                @click="selectLeccion(leccion)"
+                @click="!isModuloBloqueado(mIdx) && selectLeccion(leccion)"
+                :disabled="isModuloBloqueado(mIdx)"
                 :aria-current="activeLeccion?.id === leccion.id ? 'true' : undefined"
                 :class="[
                   'w-full rounded-2xl px-3 py-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-neon/50 !border-none',
-                  activeLeccion?.id === leccion.id ? 'bg-accent-neon/10 shadow-[0_4px_15px_rgba(16,185,129,0.1)]' : 'hover:bg-on-surface/5'
+                  activeLeccion?.id === leccion.id ? 'bg-accent-neon/10 shadow-[0_4px_15px_rgba(16,185,129,0.1)]' : 'hover:bg-on-surface/5',
+                  isModuloBloqueado(mIdx) ? 'opacity-40 cursor-not-allowed hover:bg-transparent' : ''
                 ]"
               >
                 <div class="flex items-start gap-3">
@@ -79,7 +82,7 @@
                       {{ leccion.titulo }}
                     </p>
                     <p class="mt-1 text-[9px] font-medium uppercase tracking-wider text-on-surface/35">
-                      {{ leccion.duracion_minutos || 0 }} min · {{ leccion.tipo_contenido }}
+                      {{ leccion.tipo_contenido }}
                     </p>
                   </div>
                 </div>
@@ -209,8 +212,8 @@
               <div class="prose max-w-none prose-headings:text-on-surface prose-p:text-on-surface/70 prose-a:text-accent-neon prose-strong:text-on-surface" v-html="activeLeccion.descripcion"></div>
             </div>
 
-            <!-- Exam CTA (Visible when 100% completed) -->
-            <div v-if="curso?.evaluaciones?.length > 0 && Math.round(progresoGeneral) === 100" class="mt-4 glass-card-premium relative overflow-hidden rounded-[32px] p-8 md:p-12 text-center !border-none shadow-[0_10px_40px_-10px_rgba(16,185,129,0.2)] bg-on-surface/5">
+            <!-- Exam CTA (Visible when 100% completed and exam not taken) -->
+            <div v-if="curso?.evaluaciones?.length > 0 && Math.round(progresoGeneral) === 100 && !hasTakenExam" class="mt-4 glass-card-premium relative overflow-hidden rounded-[32px] p-8 md:p-12 text-center !border-none shadow-[0_10px_40px_-10px_rgba(16,185,129,0.2)] bg-on-surface/5">
               <div class="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_center,_var(--accent-neon)_0%,_transparent_70%)] opacity-5"></div>
               <div class="relative z-10 flex flex-col items-center">
                 <div class="mb-6 flex h-20 w-20 items-center justify-center rounded-[24px] bg-accent-neon/10 text-accent-neon !border-none">
@@ -220,21 +223,55 @@
                 <p class="text-sm text-on-surface/60 max-w-lg mx-auto mb-8">
                   Estás listo para tomar la evaluación final de este curso. Asegúrate de tener buena conexión a internet y tiempo disponible.
                 </p>
-                <router-link :to="'/student/exam/' + curso.evaluaciones[0].id" class="btn-premium btn-primary-neon !px-10 !py-4 gap-3 text-sm">
+                <button @click="showExamModal = true" class="btn-premium btn-primary-neon !px-10 !py-4 gap-3 text-sm">
                   <span class="material-symbols-outlined text-lg">assignment</span>
                   Iniciar Evaluación Final
-                </router-link>
+                </button>
               </div>
             </div>
           </div>
         </div>
       </main>
     </div>
+
+    <!-- Exam Modal -->
+    <transition name="fade">
+      <div v-if="showExamModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+        <div class="glass-card-premium relative w-full max-w-lg overflow-hidden rounded-[32px] p-8 md:p-10 text-center shadow-[0_20px_60px_-15px_rgba(16,185,129,0.3)] bg-surface border border-on-surface/10">
+          <div class="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_center,_var(--accent-neon)_0%,_transparent_70%)] opacity-10"></div>
+          
+          <div class="mb-6 flex h-20 w-20 mx-auto items-center justify-center rounded-[24px] bg-accent-neon/10 text-accent-neon">
+            <span class="material-symbols-outlined text-4xl font-black">workspace_premium</span>
+          </div>
+          
+          <h3 class="font-lexend text-2xl font-black tracking-tight text-on-surface mb-3">¡Has completado el curso!</h3>
+          <p class="text-sm text-on-surface/60 mb-8 italic">
+            Estás listo para tomar la evaluación final. Asegúrate de tener buena conexión a internet y tiempo disponible.
+          </p>
+          
+          <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <button 
+  type="button" 
+  @click="showExamModal = false" 
+  class="flex items-center justify-center gap-2 py-4 px-6 text-[11px] font-black uppercase tracking-widest text-red-400/80 hover:text-white hover:bg-red-500/80 rounded-2xl transition-all duration-300 cursor-pointer border-none"
+>
+  <span class="material-symbols-outlined text-base">schedule</span>
+  Realizar más tarde
+</button>
+
+            <router-link :to="'/student/exam/' + curso?.evaluaciones?.[0]?.id" class="btn-premium btn-primary-neon !px-6 !py-3.5 gap-2 text-sm rounded-2xl shadow-neon-sm">
+              <span class="material-symbols-outlined text-lg">assignment</span>
+              Iniciar Evaluación
+            </router-link>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/services/api'
 import { getFileUrl } from '@/config'
@@ -250,17 +287,34 @@ const loading = ref(true)
 const marking = ref(false)
 const isSidebarOpen = ref(false)
 const completadas = ref([])
+const showExamModal = ref(false)
+const userIntentos = ref([])
+
+const leccionCompletada = (id) => completadas.value.includes(id)
+
+const hasTakenExam = computed(() => {
+  if (!curso.value || !curso.value.evaluaciones || curso.value.evaluaciones.length === 0) return false
+  const evalIds = curso.value.evaluaciones.map(e => e.id)
+  return userIntentos.value.some(i => evalIds.includes(i.evaluacion_id))
+})
 
 const fetchCourseData = async () => {
   loading.value = true
   try {
-    const [cursoRes, progresoRes] = await Promise.all([
+    const [cursoRes, progresoRes, intentosRes] = await Promise.all([
       api.get(`/cursos/${route.params.id}`),
       api.get('/progreso'),
+      api.get('/intentos-evaluacion').catch(() => ({ data: [] }))
     ])
 
     curso.value = cursoRes.data
     completadas.value = progresoRes.data.map((p) => p.leccion_id)
+    userIntentos.value = (intentosRes.data || []).filter(i => i.usuario_id === authStore.user.id)
+
+    if (hasTakenExam.value) {
+      router.push('/student/my-courses')
+      return
+    }
 
     if (curso.value.modulos?.length > 0 && curso.value.modulos[0].lecciones?.length > 0) {
       activeLeccion.value = curso.value.modulos[0].lecciones[0]
@@ -270,6 +324,10 @@ const fetchCourseData = async () => {
     console.error('Error fetching course details:', error)
   } finally {
     loading.value = false
+    await nextTick()
+    if (Math.round(progresoGeneral.value) === 100 && curso.value?.evaluaciones?.length > 0 && !hasTakenExam.value) {
+      showExamModal.value = true
+    }
   }
 }
 
@@ -283,7 +341,27 @@ const currentLeccionIdx = computed(() => {
   return leccionesList.value.findIndex((l) => l.id === activeLeccion.value.id)
 })
 
-const hasNext = computed(() => currentLeccionIdx.value < leccionesList.value.length - 1)
+const isModuloBloqueado = (mIdx) => {
+  if (mIdx === 0) return false
+  if (!curso.value || !curso.value.modulos) return false
+  
+  for (let i = 0; i < mIdx; i++) {
+    const mod = curso.value.modulos[i]
+    if (mod && mod.lecciones) {
+      const allCompleted = mod.lecciones.every((l) => leccionCompletada(l.id))
+      if (!allCompleted) return true
+    }
+  }
+  return false
+}
+
+const hasNext = computed(() => {
+  if (currentLeccionIdx.value >= leccionesList.value.length - 1) return false
+  const nextLecc = leccionesList.value[currentLeccionIdx.value + 1]
+  const moduloIdx = curso.value.modulos.findIndex((m) => m.lecciones.some((l) => l.id === nextLecc.id))
+  if (moduloIdx > -1 && isModuloBloqueado(moduloIdx)) return false
+  return true
+})
 const hasPrev = computed(() => currentLeccionIdx.value > 0)
 
 const progresoGeneral = computed(() => {
@@ -296,20 +374,19 @@ const selectLeccion = (leccion) => {
   activeLeccion.value = leccion
   if (window.innerWidth < 1024) isSidebarOpen.value = false
 }
-
+// solo puede poner la siguiente leccion si se ha completado el modulo anterior
 const nextLeccion = () => {
   if (hasNext.value) {
     activeLeccion.value = leccionesList.value[currentLeccionIdx.value + 1]
   }
 }
+//puede volver a cualquier leccion anterior
 
 const prevLeccion = () => {
   if (hasPrev.value) {
     activeLeccion.value = leccionesList.value[currentLeccionIdx.value - 1]
   }
 }
-
-const leccionCompletada = (id) => completadas.value.includes(id)
 
 const toggleComplete = async () => {
   if (!activeLeccion.value || marking.value) return
@@ -325,7 +402,12 @@ const toggleComplete = async () => {
         completado: true,
       })
       completadas.value.push(activeLeccion.value.id)
-      if (hasNext.value) {
+      
+      if (Math.round(progresoGeneral.value) === 100 && curso.value?.evaluaciones?.length > 0 && !hasTakenExam.value) {
+        setTimeout(() => {
+          showExamModal.value = true
+        }, 800)
+      } else if (hasNext.value) {
         setTimeout(nextLeccion, 1000)
       }
     }
@@ -358,7 +440,6 @@ const getYoutubeEmbed = (url) => {
   return `https://www.youtube.com/embed/${id}`
 }
 
-// ... (rest of the functions)
 
 onMounted(() => {
   fetchCourseData()

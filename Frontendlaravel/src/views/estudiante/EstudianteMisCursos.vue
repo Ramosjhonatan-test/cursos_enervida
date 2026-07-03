@@ -88,33 +88,60 @@
 
             <p class="mt-4 sm:mt-6 text-xs sm:text-sm leading-relaxed text-on-surface/50">
               {{ ins.estado === 'COMPLETADO' ? 'Has finalizado este curso exitosamente. Tu certificado ya está disponible para descarga.' :
+                 (ins.estado === 'ACTIVO' && hasTakenExam(ins.curso_id)) ? 'Evaluación enviada. Tus resultados están siendo procesados por el administrador.' :
                  ins.estado === 'ACTIVO' ? 'Listo para continuar donde lo dejaste desde cualquier dispositivo.' :
                  'Tu solicitud sigue en revisión y quedará habilitada cuando sea aprobada por administración.' }}
             </p>
 
             <div class="mt-6 sm:mt-auto pt-6">
               <!-- COMPLETADO: mostrar estado y link a certificados -->
-              <div v-if="ins.estado === 'COMPLETADO'" class="flex flex-col gap-4">
+              <div v-if="ins.estado === 'COMPLETADO'" class="flex flex-col gap-3">
+                <router-link v-if="!hasTakenExam(ins.curso_id)" :to="'/student/course/' + ins.curso_id" class="btn-premium btn-primary-neon !w-full !py-3 sm:!py-4 !text-[10px] sm:!text-[11px] flex justify-center items-center gap-2">
+                  Realizar evaluación
+                  <span class="material-symbols-outlined text-base sm:text-lg">assignment</span>
+                </router-link>
                 <router-link to="/student/certificates" class="btn-premium btn-secondary-glass !w-full !py-3 sm:!py-4 !text-[10px] sm:!text-[11px] gap-2">
                   <span class="material-symbols-outlined text-base sm:text-lg">workspace_premium</span>
                   Ver certificado
                 </router-link>
               </div>
 
-              <!-- ACTIVO: continuar curso -->
-              <router-link
-                v-else-if="ins.estado === 'ACTIVO'"
-                :to="'/student/course/' + ins.curso_id"
-                class="btn-premium btn-primary-neon !w-full !py-3 sm:!py-4 !text-[10px] sm:!text-[11px] flex justify-center items-center gap-2"
-              >
-                {{ (ins.porcentaje_progreso || 0) > 0 ? 'Continuar curso' : 'Empezar curso' }}
-                <span class="material-symbols-outlined text-base sm:text-lg">play_arrow</span>
-              </router-link>
+              <!-- ACTIVO: continuar curso o evaluación enviada -->
+              <template v-else-if="ins.estado === 'ACTIVO'">
+                <!-- El examen ya fue enviado: no permitir re-entrada -->
+                <div v-if="hasTakenExam(ins.curso_id)" class="flex flex-col gap-3">
+                  <div class="flex items-center justify-center gap-2 rounded-2xl bg-emerald-500/10 px-4 py-3 sm:py-4">
+                    <span class="material-symbols-outlined text-base text-emerald-400">check_circle</span>
+                    <span class="text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-emerald-400">Evaluación enviada</span>
+                  </div>
+                  <router-link to="/student/certificates" class="btn-premium btn-secondary-glass !w-full !py-3 sm:!py-4 !text-[10px] sm:!text-[11px] gap-2">
+                    <span class="material-symbols-outlined text-base sm:text-lg">workspace_premium</span>
+                    Ver mis certificados
+                  </router-link>
+                </div>
+                <!-- El examen aún no fue enviado: puede continuar -->
+                <router-link
+                  v-else
+                  :to="'/student/course/' + ins.curso_id"
+                  class="btn-premium btn-primary-neon !w-full !py-3 sm:!py-4 !text-[10px] sm:!text-[11px] flex justify-center items-center gap-2"
+                >
+                  {{ (ins.porcentaje_progreso || 0) > 0 ? 'Continuar curso' : 'Empezar curso' }}
+                  <span class="material-symbols-outlined text-base sm:text-lg">play_arrow</span>
+                </router-link>
+              </template>
 
               <!-- PENDIENTE: esperando aprobación -->
-              <div v-else class="rounded-2xl !border-none bg-on-surface/5 p-4 sm:p-6 text-center">
-                <span class="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-on-surface/30">Esperando aprobación</span>
-              </div>
+              <div v-else class="flex flex-row items-center justify-center gap-2.5 rounded-2xl border border-amber-600/30 dark:border-yellow-500/20 bg-amber-600/[0.06] dark:bg-yellow-500/5 p-4 sm:p-6 text-center">
+  <!-- Ícono adaptativo -->
+  <span class="material-symbols-outlined text-base text-amber-700 dark:text-yellow-500/60">pending</span>
+  
+  <!-- Texto adaptativo -->
+  <span class="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-yellow-500/60">
+    Esperando aprobación
+  </span>
+</div>
+
+
             </div>
           </div>
         </article>
@@ -124,9 +151,27 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import EstudiantePageHeader from '@/components/estudiante/EstudiantePageHeader.vue'
 import { getFileUrl } from '@/config'
+import api from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
+const userIntentos = ref([])
+
+onMounted(async () => {
+  try {
+    const res = await api.get('/intentos-evaluacion')
+    userIntentos.value = (res.data || []).filter(i => i.usuario_id === authStore.user.id)
+  } catch (e) {
+    console.error(e)
+  }
+})
+
+const hasTakenExam = (cursoId) => {
+  return userIntentos.value.some(i => i.evaluacion?.curso_id === cursoId)
+}
 
 const props = defineProps({
   inscripciones: {

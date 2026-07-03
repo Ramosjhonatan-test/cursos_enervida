@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Inscripcion;
+use App\Services\AuditoriaService;
 
 class InscripcionController extends Controller
 {
@@ -48,7 +49,19 @@ class InscripcionController extends Controller
             ], 422);
         }
 
-        return response()->json(Inscripcion::create($data), 201);
+        $inscripcion = Inscripcion::create($data);
+
+        AuditoriaService::log(
+            auth('api')->id(),
+            'INSCRIBIR_ESTUDIANTE',
+            'Inscripcion',
+            $inscripcion->id,
+            "Inscripción creada: usuario_id={$inscripcion->usuario_id} en curso_id={$inscripcion->curso_id} — estado: {$inscripcion->estado}",
+            null,
+            $inscripcion->toArray()
+        );
+
+        return response()->json($inscripcion, 201);
     }
 
     public function show($id)
@@ -59,13 +72,36 @@ class InscripcionController extends Controller
     public function update(Request $request, $id)
     {
         $inscripcion = Inscripcion::findOrFail($id);
+        $anterior = $inscripcion->toArray();
         $inscripcion->update($request->all());
+
+        AuditoriaService::log(
+            auth('api')->id(),
+            'ACTUALIZAR_INSCRIPCION',
+            'Inscripcion',
+            $inscripcion->id,
+            "Inscripción actualizada: usuario_id={$inscripcion->usuario_id} en curso_id={$inscripcion->curso_id}",
+            $anterior,
+            $inscripcion->toArray()
+        );
+
         return response()->json($inscripcion);
     }
 
     public function destroy($id)
     {
-        Inscripcion::findOrFail($id)->delete();
+        $inscripcion = Inscripcion::findOrFail($id);
+
+        AuditoriaService::log(
+            auth('api')->id(),
+            'ELIMINAR_INSCRIPCION',
+            'Inscripcion',
+            $inscripcion->id,
+            "Inscripción eliminada: usuario_id={$inscripcion->usuario_id} de curso_id={$inscripcion->curso_id}",
+            $inscripcion->toArray()
+        );
+
+        $inscripcion->delete();
         return response()->json(['message' => 'Inscripción eliminada']);
     }
 }

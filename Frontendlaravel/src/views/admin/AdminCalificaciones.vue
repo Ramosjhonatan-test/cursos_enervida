@@ -9,7 +9,7 @@
           Calificaciones <span class="text-accent-neon italic">Generales</span>
         </h2>
         <p class="text-on-surface/40 mt-1 text-xs font-bold uppercase tracking-widest">
-          Todos los intentos de evaluación del campus
+          Todos los intentos de evaluación de los estudiantes
         </p>
       </div>
       <!-- Stats summary -->

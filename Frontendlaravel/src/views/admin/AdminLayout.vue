@@ -41,15 +41,25 @@
               :to="link.path"
               :title="isSidebarCollapsed && !isMenuOpen ? link.text : ''"
               :class="[
-                'group flex items-center rounded-2xl py-2.5 text-sm font-bold transition-all',
+                'group flex items-center rounded-2xl py-2.5 text-sm font-bold transition-all relative',
                 isActive(link.path) ? 'bg-accent-neon text-primary shadow-neon-sm' : 'admin-soft-hover text-on-surface-variant hover:text-on-surface',
                 isSidebarCollapsed && !isMenuOpen ? 'justify-center px-0' : 'gap-3 px-4'
               ]"
               @click="isMenuOpen = false"
             >
-              <span v-if="link.icon" class="material-symbols-outlined text-[20px]">{{ link.icon }}</span>
-              <span v-else-if="link.svg" v-html="link.svg" class="w-5 h-5 flex items-center justify-center"></span>
-              <span v-if="!isSidebarCollapsed || isMenuOpen" class="truncate">{{ link.text }}</span>
+              <span v-if="link.icon" class="material-symbols-outlined text-[20px] relative">
+                {{ link.icon }}
+                <span v-if="isSidebarCollapsed && !isMenuOpen && link.text === 'Solicitudes' && solicitudStore.pendingCount > 0" class="absolute -top-1.5 -right-1.5 flex h-2.5 w-2.5">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-orange-500"></span>
+                </span>
+              </span>
+              <span v-else-if="link.svg" v-html="link.svg" class="w-5 h-5 flex items-center justify-center relative">
+              </span>
+              <span v-if="!isSidebarCollapsed || isMenuOpen" class="truncate flex-1">{{ link.text }}</span>
+              <span v-if="(!isSidebarCollapsed || isMenuOpen) && link.text === 'Solicitudes' && solicitudStore.pendingCount > 0" class="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-orange-500/20 px-1.5 text-[10px] font-black text-orange-500 border border-orange-500/30">
+                {{ solicitudStore.pendingCount }}
+              </span>
             </router-link>
           </div>
         </div>
@@ -150,8 +160,12 @@
 import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useSolicitudStore } from '@/stores/solicitudStore'
 import ThemeToggle from '@/components/global/ThemeToggle.vue'
 import AppLogo from '@/components/global/AppLogo.vue'
+
+const solicitudStore = useSolicitudStore()
+let pollingInterval = null
 
 const route = useRoute()
 const router = useRouter()
@@ -231,6 +245,11 @@ watch(isMenuOpen, (open) => {
 })
 
 onMounted(() => {
+  solicitudStore.fetchPendingCount()
+  pollingInterval = setInterval(() => {
+    solicitudStore.fetchPendingCount()
+  }, 30000)
+
   // Si entramos a /admin pero no tenemos acceso al dashboard,
   // redirigimos automáticamente al primer módulo permitido.
   if (route.path === '/admin' && !authStore.canAccess('DASHBOARD')) {
@@ -243,6 +262,9 @@ onMounted(() => {
 
 onUnmounted(() => {
   document.body.style.overflow = ''
+  if (pollingInterval) {
+    clearInterval(pollingInterval)
+  }
 })
 </script>
 
