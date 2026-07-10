@@ -104,12 +104,22 @@
           <!-- Badges Overlay -->
           <div class="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
           
-          <div class="absolute top-5 right-5 flex flex-col gap-2">
-            <div :class="['px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md transition-all shadow-xl', 
-              curso.publicado ? 'bg-accent-neon/20 text-accent-neon' : 'bg-on-surface/10 text-on-surface/60']">
-              {{ curso.publicado ? 'Publicado' : 'Privado' }}
+          <div class="absolute top-0 left-0 w-full flex justify-between items-start p-3 z-10">
+              <!-- Edición Tag (Izquierda) -->
+              <span class="px-2.5 py-1 bg-amber-500 text-white rounded-br-lg rounded-tl-2xl text-[10px] font-bold uppercase tracking-wider shadow-md">
+                Edición {{ String(curso.edicion_actual || 1).padStart(2, '0') }}
+              </span>
+              <!-- Estado Publicado / Privado (Derecha) -->
+              <div :class="[
+                'px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest border backdrop-blur-md shadow-md transition-all duration-300 flex items-center gap-1.5', 
+                curso.publicado 
+                  ? 'bg-emerald-950/40 text-emerald-300 border-emerald-500/30' 
+                  : 'bg-zinc-900/50 text-zinc-300 border-zinc-700/40'
+              ]">
+                <span :class="['w-1.5 h-1.5 rounded-full dynamic-dot', curso.publicado ? 'bg-emerald-400' : 'bg-zinc-400']"></span>
+                {{ curso.publicado ? 'Publicado' : 'Privado' }}
+              </div>
             </div>
-          </div>
         </div>
 
         <div class="p-8 flex flex-col flex-1">

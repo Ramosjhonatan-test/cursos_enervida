@@ -47,14 +47,13 @@
                       {{ (ultimoCurso.porcentaje_progreso || 0) > 0 ? 'Reanudar curso' : 'Empezar ahora' }}
                       <span class="material-symbols-outlined text-lg">play_arrow</span>
                     </router-link>
-                    
                     <div class="flex-grow w-full sm:max-w-xs">
                       <div class="mb-3 flex justify-between text-[10px] font-black uppercase tracking-widest text-on-surface/40">
                         <span>Tu progreso</span>
                         <span class="text-accent-neon">{{ Math.round(ultimoCurso.porcentaje_progreso || 0) }}%</span>
                       </div>
-                      <div class="glass-progress-bar h-2">
-                        <div class="glass-progress-fill" :style="{ width: `${ultimoCurso.porcentaje_progreso || 0}%` }"></div>
+                      <div class="glass-progress-bar h-2 w-full overflow-hidden rounded-full bg-on-surface/10">
+                        <div class="glass-progress-fill h-full rounded-full bg-accent-solar" :style="{ width: `${ultimoCurso.porcentaje_progreso || 0}%` }"></div>
                       </div>
                     </div>
                   </div>
@@ -99,7 +98,9 @@
                     <img :src="getFileUrl(curso.miniatura_url)" class="h-full w-full object-cover transition-transform group-hover:scale-110" />
                     <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                   </div>
+                  
                   <div class="p-5 flex-grow flex flex-col">
+                    
                     <h4 class="font-lexend font-black text-base line-clamp-1">{{ curso.titulo }}</h4>
                     <p class="text-[10px] text-on-surface/40 mt-2 line-clamp-2 leading-relaxed">{{ curso.descripcion }}</p>
                     <div class="mt-auto pt-6 flex flex-col gap-2">

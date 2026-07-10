@@ -195,7 +195,7 @@ const { login: customGoogleLogin } = useTokenClient({
       console.error('Error google register:', err)
       const errorCode = err.response?.data?.error
       if (errorCode === 'DISPOSITIVO_NO_AUTORIZADO') {
-        error.value = '🔒 Esta cuenta ya está vinculada a otro dispositivo. Contacta al administrador para liberar tu cuenta.'
+        error.value = ' Esta cuenta ya está vinculada a otro dispositivo. Contacta al administrador para liberar tu cuenta.'
       } else {
         const msg = err.response?.data?.message || 'Error al registrar con Google'
         error.value = msg
