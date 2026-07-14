@@ -96,7 +96,11 @@
     </div>
 
     <!-- Devices Table -->
-    <div class="glass-card-premium rounded-[40px] overflow-hidden mb-20 shadow-2xl !border-none">
+    <div class="glass-card-premium rounded-[20px] overflow-hidden shadow-2xl relative min-h-[400px] !border-none">
+      <div v-if="loading" class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/50 backdrop-blur-sm">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-accent-neon shadow-[0_0_20px_var(--accent-neon)] mb-4"></div>
+        <p class="text-[10px] font-black text-accent-neon uppercase tracking-widest animate-pulse">Cargando dispositivos...</p>
+      </div>
       <div class="overflow-x-auto">
         <table class="w-full min-w-[1100px] text-left border-separate border-spacing-0">
           <thead>
@@ -175,20 +179,13 @@
             <tr v-if="filteredDispositivos.length === 0">
               <td colspan="6" class="p-20 text-center">
                 <div class="flex flex-col items-center gap-4 opacity-10">
-                  <span class="material-symbols-outlined text-8xl">search_off</span>
+                  <span class="material-symbols-outlined text-8xl">important_devices </span>
                   <p class="text-xl font-black uppercase tracking-[0.2em]">No hay resultados</p>
                 </div>
               </td>
             </tr>
           </tbody>
         </table>
-      </div>
-    </div>
-
-    <!-- Loading Overlay -->
-    <div v-if="loading" class="fixed inset-0 bg-background/60 backdrop-blur-md z-[200] flex items-center justify-center">
-      <div class="flex flex-col items-center gap-6">
-        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-accent-neon shadow-neon-sm"></div>
       </div>
     </div>
   </div>

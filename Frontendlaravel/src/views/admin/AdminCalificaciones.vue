@@ -27,6 +27,12 @@
           <p class="text-2xl font-black text-red-500 mt-1">{{ reprobados }}</p>
         </div>
       </div>
+      <div class="flex flex-wrap items-center gap-4">
+          <button @click="fetchIntentos" class="btn-premium btn-secondary-glass !py-4 px-8 group/btn relative overflow-hidden !border-none shadow-xl hover:shadow-accent-neon/20 transition-all duration-500">
+             <span class="material-symbols-outlined text-lg transition-transform group-hover/btn:rotate-180 duration-500 relative" :class="{ 'animate-spin': loading }">refresh</span>
+             <span class="relative font-bold">Actualizar</span>
+          </button>
+        </div>
     </div>
 
     <!-- Filters -->
@@ -61,14 +67,13 @@
     </div>
 
     <!-- Table -->
-    <div class="glass-card rounded-[32px] overflow-hidden">
-      <div v-if="loading" class="flex flex-col items-center gap-4 py-20">
-        <div class="h-12 w-12 animate-spin rounded-full border-t-2 border-accent-neon shadow-[0_0_20px_var(--accent-neon)]"></div>
-        <p class="text-[10px] font-black uppercase tracking-[0.4em] text-accent-neon">Cargando calificaciones...</p>
+    <div class="glass-card-premium rounded-[20px] overflow-hidden shadow-2xl relative min-h-[400px] !border-none">
+      <div v-if="loading" class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/50 backdrop-blur-sm">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-accent-neon shadow-[0_0_20px_var(--accent-neon)] mb-4"></div>
+        <p class="text-[10px] font-black text-accent-neon uppercase tracking-widest animate-pulse">Cargando calificaciones...</p>
       </div>
-
-      <div v-else class="overflow-x-auto">
-        <table class="w-full text-left">
+      <div  class="overflow-x-auto">
+        <table class="w-full min-w-[900px] text-left border-separate border-spacing-0">
           <thead>
             <tr class="border-b border-on-surface/5">
               <th class="px-8 pb-5 pt-8 text-[10px] font-black text-on-surface/40 uppercase tracking-widest">Estudiante</th>
@@ -300,11 +305,13 @@ const fetchIntentos = async () => {
     const res = await api.get('/intentos-evaluacion')
     intentos.value = res.data
   } catch (e) {
-    console.error('Error cargando intentos:', e)
+    console.error('Error cargando calificaciones:', e)
   } finally {
     loading.value = false
   }
 }
+
+
 
 // ---- computed stats ----
 const aprobados = computed(() => intentos.value.filter(i => i.aprobado).length)

@@ -19,6 +19,7 @@
           <p class="text-xs text-on-surface/50 font-medium mt-1">Visión general del sistema</p>
         </div>
       </div>
+      
 
       <!-- Right: Date/Time (Redesigned) -->
       <div class="relative z-10 flex items-center gap-4 bg-surface/40 backdrop-blur-md !border-none rounded-[20px] px-5 py-3 shadow-sm">
@@ -29,6 +30,7 @@
         <div class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500/20 to-violet-500/20 flex items-center justify-center">
           <span class="material-symbols-outlined text-cyan-400 text-lg">schedule</span>
         </div>
+      
       </div>
     </section>
 
@@ -367,6 +369,13 @@ import api from '@/services/api'
 import jsPDF from 'jspdf'
 import * as XLSX from 'xlsx'
 
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
+import pdfMake from 'pdfmake/build/pdfmake';
+import * as pdfFonts from 'pdfmake/build/vfs_fonts';
+
+pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfMake.vfs;
+
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, LineElement, PointElement, Filler, Tooltip, Legend)
 
 const expandedChart = shallowRef(null)
@@ -382,121 +391,232 @@ const expandChart = (config) => {
   expandedChart.value = config
 }
 
+
+// Función auxiliar para cargar logos locales (.webp o .png) y convertirlos a PNG Base64 real
+const loadLogoToPngBase64 = (url) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = (e) => reject(e);
+    img.src = url;
+  });
+};
+
 const exportChart = async (format) => {
-  if (!expandedChart.value) return
-  if (exportStatus.value[format] !== 'idle') return
+  if (!expandedChart.value) return;
+  if (exportStatus.value[format] !== 'idle') return;
   
-  const title = expandedChart.value.title.replace(/\s+/g, '_').toLowerCase()
-  exportStatus.value[format] = 'loading'
+  const titleSlug = expandedChart.value.title.replace(/\s+/g, '_').toLowerCase();
+  const originalTitle = expandedChart.value.title;
+  exportStatus.value[format] = 'loading';
   
   try {
     let downloadAction = null;
     
-    // Simular un tiempo de procesamiento para el spinner
+    // Simular un sutil tiempo de procesamiento para el spinner de la interfaz
     await new Promise(r => setTimeout(r, 600));
 
+    // ==========================================
+    // 1. EXPORTAR A EXCEL (CON EXCELJS)
+    // ==========================================
     if (format === 'excel') {
-      const data = expandedChart.value.data
-      const labels = data.labels
-      const dataset = data.datasets[0] // Asumimos un solo dataset para estos gráficos
+      const data = expandedChart.value.data;
+      const labels = data.labels;
+      const dataset = data.datasets[0];
 
-      const rows = labels.map((label, index) => ({
-        Etiqueta: label,
-        Valor: dataset.data[index]
-      }))
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Datos Estadísticos');
+
+      // Configurar las columnas de la tabla
+      worksheet.columns = [
+        { header: 'CONCEPTO / ETIQUETA', key: 'label', width: 35 },
+        { header: 'VALOR NUMÉRICO', key: 'value', width: 20 }
+      ];
+
+      // Estilizar la cabecera (Azul Oscuro Corporativo #2C3E50)
+      const headerRow = worksheet.getRow(1);
+      headerRow.height = 26;
+      headerRow.eachCell((cell) => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2C3E50' } };
+        cell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      });
+
+      // Llenar con los datos dinámicos del gráfico
+      labels.forEach((label, index) => {
+        const row = worksheet.addRow({
+          label: label,
+          value: dataset.data[index]
+        });
+        row.height = 20;
+        
+        // Formato para columna de etiquetas
+        row.getCell(1).font = { name: 'Segoe UI', size: 10 };
+        row.getCell(1).alignment = { vertical: 'middle', horizontal: 'left' };
+        
+        // Formato numérico profesional para los valores de la derecha
+        row.getCell(2).font = { name: 'Segoe UI', size: 10, bold: true };
+        row.getCell(2).alignment = { vertical: 'middle', horizontal: 'right' };
+        row.getCell(2).numFmt = '#,##0.00'; 
+
+        // Líneas divisorias suaves entre celdas
+        row.eachCell(cell => {
+          cell.border = { bottom: { style: 'thin', color: { argb: 'FFE0E0E0' } } };
+        });
+      });
+
+      downloadAction = async () => {
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        saveAs(blob, `${titleSlug}_data_${Date.now()}.xlsx`);
+      };
+
+    // ==========================================
+    // 2. EXPORTAR COMO IMAGEN PNG CRUDA
+    // ==========================================
+    } else if (format === 'image') {
+      const chartInstance = chartRef.value?.chart;
+      if (!chartInstance) throw new Error("Chart not ready");
+      const base64Image = chartInstance.toBase64Image();
+
+      const a = document.createElement('a');
+      a.href = base64Image;
+      a.download = `${titleSlug}_graphic_${Date.now()}.png`;
+      downloadAction = () => a.click();
+
+    // ==========================================
+    // 3. EXPORTAR A PDF (CON PDFMAKE) - MEJORADO
+    // ==========================================
+    } else if (format === 'pdf') {
+      const chartInstance = chartRef.value?.chart;
+      if (!chartInstance) throw new Error("Chart not ready");
+
+      // --- 🌟 AJUSTE CRÍTICO: FORZAR COLORES OSCUROS PARA ALTA LEGIBILIDAD EN IMPRESIÓN ---
+      // Respaldamos los colores actuales de la pantalla (Modo Oscuro / Personalizados)
+      const originalXColor = chartInstance.options.scales?.x?.ticks?.color;
+      const originalYColor = chartInstance.options.scales?.y?.ticks?.color;
+      const originalGridXColor = chartInstance.options.scales?.x?.grid?.color;
+      const originalGridYColor = chartInstance.options.scales?.y?.grid?.color;
+      const originalLegendColor = chartInstance.options.plugins?.legend?.labels?.color;
+
+      // Forzar temporalmente fuentes oscuras e institucionales (#2C3E50) sobre el papel blanco
+      if (chartInstance.options.scales?.x?.ticks) chartInstance.options.scales.x.ticks.color = '#2C3E50';
+      if (chartInstance.options.scales?.y?.ticks) chartInstance.options.scales.y.ticks.color = '#2C3E50';
+      if (chartInstance.options.plugins?.legend?.labels) chartInstance.options.plugins.legend.labels.color = '#2C3E50';
       
-      const worksheet = XLSX.utils.json_to_sheet(rows)
-      const workbook = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Datos")
+      // Pintar las rejillas internas del gráfico con un gris muy suave y limpio
+      if (chartInstance.options.scales?.x?.grid) chartInstance.options.scales.x.grid.color = '#E2E8F0';
+      if (chartInstance.options.scales?.y?.grid) chartInstance.options.scales.y.grid.color = '#E2E8F0';
+
+      // Actualizar el estado interno del gráfico inmediatamente (sin animación de pantalla)
+      chartInstance.update('none'); 
+
+      // Capturar la imagen nítida en Base64 con la configuración de contraste lista
+      const base64Image = chartInstance.toBase64Image();
+
+      // --- RESTAURAR CONFIGURACIÓN ORIGINAL EN PANTALLA ---
+      // Devolvemos los colores del gráfico a su estado original para que el usuario no note cambios visuales
+      if (chartInstance.options.scales?.x?.ticks) chartInstance.options.scales.x.ticks.color = originalXColor;
+      if (chartInstance.options.scales?.y?.ticks) chartInstance.options.scales.y.ticks.color = originalYColor;
+      if (chartInstance.options.plugins?.legend?.labels) chartInstance.options.plugins.legend.labels.color = originalLegendColor;
+      if (chartInstance.options.scales?.x?.grid) chartInstance.options.scales.x.grid.color = originalGridXColor;
+      if (chartInstance.options.scales?.y?.grid) chartInstance.options.scales.y.grid.color = originalGridYColor;
       
-      downloadAction = () => XLSX.writeFile(workbook, `${title}_${Date.now()}.xlsx`)
-    } else {
-      const chartInstance = chartRef.value?.chart
-      if (!chartInstance) throw new Error("Chart not ready")
-      const base64Image = chartInstance.toBase64Image()
+      chartInstance.update('none'); 
+      // ----------------------------------------------------------------------------------
 
-      if (format === 'image') {
-        const a = document.createElement('a')
-        a.href = base64Image
-        a.download = `${title}_${Date.now()}.png`
-        downloadAction = () => a.click()
-      } else if (format === 'pdf') {
-        const pdf = new jsPDF('landscape')
-        
-        // Customizing PDF Layout (Professional)
-        pdf.setFillColor(15, 23, 42) // Dark slate background for header
-        pdf.rect(0, 0, 297, 45, 'F')
-        
-        const logoUrl = '/logo-light.webp'
-        const loadImg = (src) => new Promise((resolve, reject) => {
-          const img = new Image()
-          img.onload = () => resolve(img)
-          img.onerror = reject
-          img.src = src
-        })
-        
-        try {
-           const img = await loadImg(logoUrl)
-           const canvas = document.createElement('canvas')
-           canvas.width = img.width
-           canvas.height = img.height
-           const ctx = canvas.getContext('2d')
-           ctx.drawImage(img, 0, 0)
-           const logoData = canvas.toDataURL('image/png')
-           pdf.addImage(logoData, 'PNG', 15, 10, 35, 25)
-        } catch(e) {
-           console.warn("Could not load logo", e)
-        }
-
-        // Title and Subtitle
-        pdf.setTextColor(255, 255, 255)
-        pdf.setFontSize(24)
-        pdf.setFont('helvetica', 'bold')
-        pdf.text("Reporte Estadístico", 60, 22)
-        
-        pdf.setFontSize(14)
-        pdf.setFont('helvetica', 'normal')
-        pdf.setTextColor(34, 211, 238) // Cyan-400
-        pdf.text(expandedChart.value.title.toUpperCase(), 60, 32)
-        
-        // Date on the right
-        pdf.setTextColor(255, 255, 255)
-        pdf.setFontSize(10)
-        const dateStr = new Date().toLocaleDateString('es-BO', { year: 'numeric', month: 'long', day: 'numeric' })
-        pdf.text(`Fecha: ${dateStr}`, 275, 25, { align: 'right' })
-
-        // Draw chart background
-        pdf.setFillColor(248, 250, 252) // slate-50
-        pdf.rect(15, 50, 267, 140, 'F')
-
-        // Insert chart
-        pdf.addImage(base64Image, 'PNG', 20, 55, 257, 130)
-        
-        // Footer
-        pdf.setFillColor(241, 245, 249) // slate-100
-        pdf.rect(0, 195, 297, 15, 'F')
-        pdf.setTextColor(100, 116, 139)
-        pdf.setFontSize(10)
-        pdf.text("Generado por el Sistema de Administración LMS", 15, 204)
-        pdf.text("Confidencial - Uso Interno", 282, 204, { align: 'right' })
-
-        downloadAction = () => pdf.save(`${title}_${Date.now()}.pdf`)
+      // Procesar y transformar el logo de Enervida de forma asíncrona
+      let logoDataUrl = null;
+      try {
+        logoDataUrl = await loadLogoToPngBase64('/logo-dark.webp');
+      } catch (e) {
+        console.warn("No se pudo procesar el logotipo, el PDF continuará con cabecera de texto.", e);
       }
+
+      // Estructurar las columnas del membrete
+      const headerColumns = [];
+      if (logoDataUrl) {
+        headerColumns.push({ image: logoDataUrl, width: 130, alignment: 'left' });
+      } else {
+        headerColumns.push({ text: 'ENERVIDA', fontSize: 16, bold: true, color: '#2C3E50', alignment: 'left' });
+      }
+
+      headerColumns.push({
+        width: '*',
+        stack: [
+          { text: 'REPORTE ESTADÍSTICO', style: 'pdfTitle' },
+          { text: originalTitle.toUpperCase(), style: 'pdfSubtitle' },
+          { 
+            text: `Generado el: ${new Date().toLocaleDateString('es-BO', { year: 'numeric', month: 'long', day: 'numeric' })}`, 
+            style: 'pdfDate' 
+          }
+        ],
+        alignment: 'right',
+        margin: [0, logoDataUrl ? 10 : 0, 0, 0] // Sincronización y centrado vertical con el logo
+      });
+
+      // Definición completa de la estructura de pdfMake
+      const docDefinition = {
+        pageSize: 'A4',
+        pageOrientation: 'landscape',
+        pageMargins: [40, 45, 40, 45],
+        content: [
+          // Sección de Membrete
+          { columns: headerColumns },
+          // Línea divisoria elegante
+          {
+            canvas: [{ type: 'line', x1: 0, y1: 12, x2: 762, y2: 12, lineWidth: 1.5, lineColor: '#2C3E50' }]
+          },
+          { text: '', margin: [0, 0, 0, 25] }, // Espaciado cómodo
+
+          // El contenedor de la imagen del gráfico estadístico (Ahora 100% visible)
+          {
+            image: base64Image,
+            width: 680, 
+            alignment: 'center'
+          }
+        ],
+        styles: {
+          pdfTitle: { fontSize: 16, bold: true, color: '#2C3E50' },
+          pdfSubtitle: { fontSize: 11, bold: true, color: '#2980B9', margin: [0, 2, 0, 2] },
+          pdfDate: { fontSize: 8.5, italics: true, color: '#7F8C8D' }
+        },
+        footer: (currentPage, pageCount) => {
+          return {
+            columns: [
+              { text: 'Generado por el Sistema de Administración LMS', alignment: 'left', fontSize: 8, color: '#95A5A6' },
+              { text: `Página ${currentPage} de ${pageCount}`, alignment: 'right', fontSize: 8, color: '#95A5A6' }
+            ],
+            margin: [40, 0, 40, 0]
+          };
+        }
+      };
+
+      downloadAction = () => pdfMake.createPdf(docDefinition).download(`${titleSlug}_report_${Date.now()}.pdf`);
     }
 
-    exportStatus.value[format] = 'success'
-    setTimeout(() => {
-      if (downloadAction) downloadAction()
+    // Cambiar estado visual de carga a éxito e iniciar la descarga
+    exportStatus.value[format] = 'success';
+    setTimeout(async () => {
+      if (downloadAction) await downloadAction();
       setTimeout(() => {
-        exportStatus.value[format] = 'idle'
-      }, 500)
-    }, 1200)
+        exportStatus.value[format] = 'idle';
+      }, 500);
+    }, 1200);
 
   } catch(e) {
-    console.error("Export error:", e)
-    exportStatus.value[format] = 'idle'
+    console.error("Error crítico durante la exportación:", e);
+    exportStatus.value[format] = 'idle';
   }
-}
+};
 
 const stats = ref({})
 const topCourses = ref([])

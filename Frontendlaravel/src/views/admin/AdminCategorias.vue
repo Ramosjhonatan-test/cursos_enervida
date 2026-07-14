@@ -61,7 +61,11 @@
     </transition>
 
     <!-- Categorias Table -->
-    <div class="glass-card-premium rounded-[40px] overflow-hidden !border-none shadow-2xl">
+    <div class="glass-card-premium rounded-[40px] overflow-hidden shadow-2xl relative min-h-[400px] !border-none">
+      <div v-if="loading" class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/50 backdrop-blur-sm">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-accent-neon shadow-[0_0_20px_var(--accent-neon)] mb-4"></div>
+        <p class="text-[10px] font-black text-accent-neon uppercase tracking-widest animate-pulse">Cargando categorias...</p>
+      </div>
       <div class="overflow-x-auto">
         <table class="w-full min-w-[800px] text-left border-separate border-spacing-0">
           <thead>
@@ -95,12 +99,10 @@
                 </div>
               </td>
             </tr>
-            <tr v-if="categorias.length === 0">
-              <td colspan="3" class="p-20 text-center">
-                <div class="flex flex-col items-center gap-4 text-on-surface/20">
-                  <span class="material-symbols-outlined text-6xl">category</span>
-                  <p class="text-sm font-black uppercase tracking-widest">No hay categorías registradas</p>
-                </div>
+            <tr v-if="!categorias.length">
+              <td colspan="6" class="px-8 py-20 text-center text-on-surface/20">
+                <span class="material-symbols-outlined text-4xl mb-3 block">search_off</span>
+                <p class="text-[10px] font-black uppercase tracking-widest">Sin resultados</p>
               </td>
             </tr>
           </tbody>
@@ -108,12 +110,7 @@
       </div>
     </div>
 
-    <!-- Loading Overlay -->
-    <div v-if="loading" class="fixed inset-0 bg-background/60 backdrop-blur-md z-[200] flex items-center justify-center">
-      <div class="flex flex-col items-center gap-6">
-        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-accent-neon"></div>
-      </div>
-    </div>
+  
   </div>
 </template>
 

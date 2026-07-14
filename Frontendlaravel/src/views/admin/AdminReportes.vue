@@ -1,5 +1,6 @@
 <template>
   <div class="space-y-10 animate-fade-in text-on-surface">
+    
     <!-- Header -->
     <div class="panel-hero p-6 sm:p-8">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -33,11 +34,15 @@
         </div>
       </div>
     </div>
+    
 
     <!-- Charts Row -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <!-- Enrollments by Course Chart -->
       <div class="glass-card-premium p-10 rounded-[40px]">
+         <div v-if="loading" class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/50 backdrop-blur-sm">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-accent-neon shadow-[0_0_20px_var(--accent-neon)] mb-4"></div>
+        <p class="text-[10px] font-black text-accent-neon uppercase tracking-widest animate-pulse">Cargando reportes...</p>
+      </div>
         <h3 class="text-xl font-black mb-10 font-lexend tracking-tighter italic">Top 5 Cursos <span class="text-accent-neon">Más Populares</span></h3>
         <div class="space-y-8">
           <div v-for="item in enrollmentsByCourse" :key="item.titulo" class="space-y-3">
@@ -57,6 +62,8 @@
              <p class="text-[10px] font-black uppercase tracking-widest">Sin datos suficientes</p>
           </div>
         </div>
+        
+  
       </div>
 
       <!-- Growth Summary / Placeholder Chart -->
@@ -78,14 +85,6 @@
               <p class="text-2xl font-black text-on-surface">94.2%</p>
            </div>
         </div>
-      </div>
-    </div>
-
-    <!-- Loading Overlay -->
-    <div v-if="loading" class="fixed inset-0 bg-background/60 backdrop-blur-md z-[200] flex items-center justify-center">
-      <div class="flex flex-col items-center gap-6">
-        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-accent-neon shadow-[0_0_20px_var(--accent-neon)]"></div>
-        <p class="text-[10px] font-black text-accent-neon uppercase tracking-[0.4em]">Generando Reportes...</p>
       </div>
     </div>
   </div>

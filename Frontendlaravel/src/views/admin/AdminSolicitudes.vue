@@ -13,38 +13,48 @@
         <h2 class="text-4xl md:text-5xl font-black text-on-surface font-lexend tracking-tighter">Solicitudes de <span class="text-accent-neon  text-gradient-neon">Inscripción</span></h2>
         <p class="text-on-surface-variant mt-3 text-sm font-medium opacity-80 max-w-xl">Revisa, aprueba o rechaza las solicitudes de estudiantes para acceder a los programas de formación técnica.</p>
       </div>
+      <div class="flex flex-wrap items-center gap-4">
+          <button @click="fetchSolicitudes" class="btn-premium btn-primary-cyan !py-4 px-8 group/btn relative overflow-hidden !border-none shadow-xl hover:shadow-accent-neon/20 transition-all duration-500">
+             <span class="material-symbols-outlined text-lg transition-transform group-hover/btn:rotate-180 duration-500 relative" :class="{ 'animate-spin': loading }">refresh</span>
+             <span class="relative font-bold">Actualizar</span>
+          </button>
+        </div>
     </div>
 
     <!-- Stats Row -->
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-      <div class="glass-card-premium p-8 rounded-[32px] group/stat hover:-translate-y-1 transition-all shadow-xl">
-        <div class="flex items-center gap-4 mb-6">
-          <div class="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-500 group-hover/stat:scale-110 transition-transform">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          </div>
-          <span class="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Pendientes</span>
-        </div>
-        <p class="text-5xl font-black text-on-surface">{{ pendingCount }}</p>
-      </div>
-      <div class="glass-card-premium p-8 rounded-[32px] group/stat hover:-translate-y-1 transition-all shadow-xl">
-        <div class="flex items-center gap-4 mb-6">
-          <div class="w-12 h-12 rounded-2xl bg-accent-neon/10 flex items-center justify-center text-accent-neon group-hover/stat:scale-110 transition-transform">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-          </div>
-          <span class="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Aprobadas</span>
-        </div>
-        <p class="text-5xl font-black text-on-surface">{{ approvedCount }}</p>
-      </div>
-      <div class="glass-card-premium p-8 rounded-[32px] group/stat hover:-translate-y-1 transition-all shadow-xl">
-        <div class="flex items-center gap-4 mb-6">
-          <div class="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500 group-hover/stat:scale-110 transition-transform">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-          </div>
-          <span class="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">Rechazadas</span>
-        </div>
-        <p class="text-5xl font-black text-on-surface">{{ rejectedCount }}</p>
-      </div>
+   <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+  
+  <div class="glass-card-premium rounded-[2.5rem] p-8 flex items-center gap-6 group hover:-translate-y-1 transition-all duration-500 !border-none shadow-2xl">
+    <div class="w-16 h-16 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-500 group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(249,115,22,0.2)] transition-all duration-300">
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
     </div>
+    <div>
+      <p class="text-[10px] font-black text-on-surface/40 uppercase tracking-widest mb-1">Pendientes</p>
+      <p class="text-4xl font-black text-on-surface font-lexend tracking-tight">{{ pendingCount }}</p>
+    </div>
+  </div>
+
+  <div class="glass-card-premium rounded-[2.5rem] p-8 flex items-center gap-6 group hover:-translate-y-1 transition-all duration-500 !border-none shadow-2xl">
+    <div class="w-16 h-16 rounded-2xl bg-accent-neon/10 flex items-center justify-center text-accent-neon group-hover:scale-110 group-hover:shadow-neon-sm transition-all duration-300">
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    </div>
+    <div>
+      <p class="text-[10px] font-black text-on-surface/40 uppercase tracking-widest mb-1">Aprobadas</p>
+      <p class="text-4xl font-black text-on-surface font-lexend tracking-tight">{{ approvedCount }}</p>
+    </div>
+  </div>
+
+  <div class="glass-card-premium rounded-[2.5rem] p-8 flex items-center gap-6 group hover:-translate-y-1 transition-all duration-500 !border-none shadow-2xl">
+    <div class="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500 group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(239,68,68,0.2)] transition-all duration-300">
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+    </div>
+    <div>
+      <p class="text-[10px] font-black text-on-surface/40 uppercase tracking-widest mb-1">Rechazadas</p>
+      <p class="text-4xl font-black text-on-surface font-lexend tracking-tight">{{ rejectedCount }}</p>
+    </div>
+  </div>
+
+</div>
 
     <!-- Filter Tabs -->
     <div class="flex gap-4 pb-4 overflow-x-auto custom-scrollbar">
@@ -74,9 +84,11 @@
             <tr v-for="solicitud in filteredSolicitudes" :key="solicitud.id" class="group hover:bg-on-surface/[0.03] transition-colors">
               <td class="p-6 md:p-8">
                 <div class="flex items-center gap-5">
-                  <div class="w-12 h-12 rounded-2xl bg-on-surface/5 overflow-hidden shrink-0">
-                    <img v-if="solicitud.usuario?.imagen_perfil" :src="solicitud.usuario.imagen_perfil" class="w-full h-full object-cover" />
-                    <div v-else class="w-full h-full flex items-center justify-center text-on-surface/40 font-black">{{ solicitud.usuario?.nombres?.[0] || '?' }}</div>
+                  <div class="w-12 h-12 rounded-2xl bg-on-surface/5 overflow-hidden shrink-0 flex items-center justify-center relative">
+                    <img v-if="solicitud.usuario?.imagen_perfil" :src="solicitud.usuario.imagen_perfil" class="w-full h-full object-cover" alt="Avatar"/>
+                    <div v-else class="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-600/20 to-indigo-600/30 text-blue-400 font-black text-base uppercase tracking-wider border border-blue-500/10">
+                      {{ solicitud.usuario?.nombres?.[0] || '?' }}
+                    </div>
                   </div>
                   <div class="flex flex-col gap-1.5">
                     <p class="text-sm font-black text-on-surface">{{ solicitud.usuario?.nombres }} {{ solicitud.usuario?.apellidos }}</p>

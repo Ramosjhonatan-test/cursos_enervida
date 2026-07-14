@@ -185,9 +185,10 @@
         <!-- Evaluation Attempts -->
         <div class="glass-card p-10 rounded-[40px]">
           <h4 class="text-xl font-black font-lexend tracking-tighter italic mb-10">Historial de <span class="text-accent-neon">Evaluaciones</span></h4>
-          
-          <div class="overflow-x-auto">
-            <table class="w-full text-left">
+           
+
+          <div class="glass-card-premium ">
+            <table class="w-full text-left rounded-[10px] overflow-hidden">
               <thead>
                 <tr class="bg-on-surface/[0.03]">
                   <th class="pb-6 text-[10px] font-black text-on-surface/40 uppercase tracking-widest">Evaluación</th>

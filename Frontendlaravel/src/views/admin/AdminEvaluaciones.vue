@@ -76,6 +76,10 @@
 
     <!-- Evaluations List -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div v-if="loading" class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/50 backdrop-blur-sm">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-accent-neon shadow-[0_0_20px_var(--accent-neon)] mb-4"></div>
+        <p class="text-[10px] font-black text-accent-neon uppercase tracking-widest animate-pulse">Cargando evaluaciones...</p>
+      </div>
       <div v-for="evaluacion in evaluaciones" :key="evaluacion.id" class="glass-card p-8 rounded-[40px] group transition-all flex flex-col">
         <div class="flex justify-between items-start mb-6">
           <div class="w-14 h-14 rounded-2xl bg-accent-neon/10 flex items-center justify-center text-accent-neon group-hover:scale-110 transition-transform">

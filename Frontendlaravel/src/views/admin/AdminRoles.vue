@@ -125,7 +125,11 @@
     </transition>
 
     <!-- Roles Table -->
-    <div class="glass-card-premium rounded-[48px] overflow-hidden !border-none shadow-2xl">
+    <div class="glass-card-premium rounded-[20px] overflow-hidden shadow-2xl relative min-h-[400px] !border-none">
+      <div v-if="loading" class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/50 backdrop-blur-sm">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-accent-neon shadow-[0_0_20px_var(--accent-neon)] mb-4"></div>
+        <p class="text-[10px] font-black text-accent-neon uppercase tracking-widest animate-pulse">Cargando inscripciones...</p>
+      </div>
       <div class="overflow-x-auto">
         <table class="w-full min-w-[800px] text-left border-separate border-spacing-0">
           <thead>
@@ -181,7 +185,7 @@
               <td colspan="3" class="p-32 text-center">
                 <div class="flex flex-col items-center gap-8 text-on-surface/10 animate-float">
                   <div class="w-24 h-24 rounded-full bg-on-surface/5 flex items-center justify-center">
-                    <span class="material-symbols-outlined text-6xl">shield_off</span>
+                    <span class="material-symbols-outlined text-6xl">shield_person</span>
                   </div>
                   <div>
                     <h4 class="text-xl font-black text-on-surface font-lexend uppercase tracking-widest">Vórtice de Seguridad Vacío</h4>
@@ -192,14 +196,6 @@
             </tr>
           </tbody>
         </table>
-      </div>
-    </div>
-
-    <!-- Loading Overlay -->
-    <div v-if="loading" class="fixed inset-0 bg-background/60 backdrop-blur-md z-[200] flex items-center justify-center">
-      <div class="flex flex-col items-center gap-6">
-        <div class="w-20 h-20 rounded-full border-t-2 border-accent-neon animate-spin shadow-neon"></div>
-        <p class="text-[10px] font-black text-accent-neon uppercase tracking-[0.5em] animate-pulse">Sincronizando RBAC</p>
       </div>
     </div>
   </div>

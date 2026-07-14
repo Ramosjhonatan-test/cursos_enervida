@@ -19,7 +19,7 @@
        
        <div v-if="loading" class="text-center py-20">
           <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-accent-neon mx-auto"></div>
-          <p class="mt-4 text-on-surface/50">Cargando cursos...</p>
+          <p class="mt-4 text-on-surface/50">Cargando certificados...</p>
        </div>
        
        <div v-else-if="filteredCursos.length === 0" class="text-center py-20">

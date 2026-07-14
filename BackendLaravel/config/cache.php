@@ -62,6 +62,7 @@ return [
             ],
             'options' => [
                 // Memcached::OPT_CONNECT_TIMEOUT => 2000,
+                
             ],
             'servers' => [
                 [

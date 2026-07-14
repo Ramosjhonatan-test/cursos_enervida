@@ -57,9 +57,12 @@
               <span v-else-if="link.svg" v-html="link.svg" class="w-5 h-5 flex items-center justify-center relative">
               </span>
               <span v-if="!isSidebarCollapsed || isMenuOpen" class="truncate flex-1">{{ link.text }}</span>
-              <span v-if="(!isSidebarCollapsed || isMenuOpen) && link.text === 'Solicitudes' && solicitudStore.pendingCount > 0" class="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-orange-500/20 px-1.5 text-[10px] font-black text-orange-500 border border-orange-500/30">
+              <div v-if="(!isSidebarCollapsed || isMenuOpen) && link.text === 'Solicitudes' && solicitudStore.pendingCount > 0" class="relative ml-auto flex h-5 items-center justify-center">
+                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-orange-500/40 opacity-75"></span>
+                <span class="relative flex h-5 min-w-[20px] items-center justify-center rounded-full bg-orange-500 px-1.5 text-[10px] font-black uppercase tracking-wider text-white shadow-[0_2px_8px_rgba(249,115,22,0.4)] dark:shadow-[0_0_12px_rgba(249,115,22,0.4)] transition-all duration-300">
                 {{ solicitudStore.pendingCount }}
-              </span>
+                </span>
+              </div>
             </router-link>
           </div>
         </div>

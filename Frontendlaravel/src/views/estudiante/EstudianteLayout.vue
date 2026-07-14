@@ -67,16 +67,22 @@
             <span class="material-symbols-outlined text-xl">help</span>
           </router-link>
           <router-link to="/student/profile" class="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl !border-none !bg-on-surface/[0.04] text-sm font-black text-accent-neon" aria-label="Perfil">
-            <img
-              v-if="profileImageUrl && !profileImageFailed"
-              :src="profileImageUrl"
-              :alt="`Perfil de ${authStore.user?.nombres || 'estudiante'}`"
-              referrerpolicy="no-referrer"
-              class="h-full w-full object-cover"
-              @error="profileImageFailed = true"
-            />
-            <span v-else>{{ userInitials }}</span>
-          </router-link>
+  <img
+    v-if="profileImageUrl && !profileImageFailed"
+    :src="profileImageUrl"
+    :alt="`Perfil de ${authStore.user?.nombres || 'estudiante'}`"
+    referrerpolicy="no-referrer"
+    class="h-full w-full object-cover"
+    @error="profileImageFailed = true"
+  />
+  
+  <div 
+    v-else 
+    class="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-600/20 to-indigo-600/30 text-blue-400 font-black text-sm uppercase tracking-wider border border-blue-500/10"
+  >
+    {{ userInitials }}
+  </div>
+</router-link>
           <button @click="handleLogout" class="flex h-10 w-10 items-center justify-center rounded-xl bg-on-surface/5 text-on-surface/45 transition hover:text-accent-neon">
             <span class="material-symbols-outlined text-xl">logout</span>
           </button>
@@ -206,31 +212,29 @@
                 Confirma tus datos para la emisión de certificados oficiales.
               </p>
             </div>
-
             <form @submit.prevent="handleCompleteProfile">
-              <div class="mb-6 sm:mb-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
-                <input v-model="profileForm.nombres" type="text" required placeholder="Nombres" class="input-cyber !bg-on-surface/[0.04] !border-none !rounded-2xl" />
-                <input v-model="profileForm.apellidos" type="text" required placeholder="Apellidos" class="input-cyber !bg-on-surface/[0.04] !border-none !rounded-2xl" />
-                <input :value="authStore.user?.correo" type="email" readonly class="input-cyber !bg-on-surface/[0.04] !border-none !rounded-2xl cursor-not-allowed opacity-50" />
-                <input v-model="profileForm.ci" type="text" required placeholder="Cédula / DNI" class="input-cyber !bg-on-surface/[0.04] !border-none !rounded-2xl" />
-                <input v-model="profileForm.telefono" type="text" required placeholder="WhatsApp / Celular" class="input-cyber !bg-on-surface/[0.04] !border-none !rounded-2xl" />
-                <div class="relative">
-                  <input v-model="profileForm.contrasena" :type="showPassword ? 'text' : 'password'" placeholder="Contraseña (Opcional)" class="input-cyber !bg-on-surface/[0.04] !border-none !rounded-2xl" />
-                  <button type="button" @click="showPassword = !showPassword" class="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface/30 hover:text-accent-neon">
-                    <span class="material-symbols-outlined text-xl">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
+                <div class="mb-6 sm:mb-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+                  <input v-model="profileForm.nombres" type="text" required placeholder="Nombres" class="input-cyber !bg-on-surface/[0.04] !border-none !rounded-2xl" />
+                  <input v-model="profileForm.apellidos" type="text" required placeholder="Apellidos" class="input-cyber !bg-on-surface/[0.04] !border-none !rounded-2xl" />
+                  <input :value="authStore.user?.correo" type="email" readonly class="input-cyber !bg-on-surface/[0.04] !border-none !rounded-2xl cursor-not-allowed opacity-50" />
+                  <input v-model="profileForm.ci" type="text" required placeholder="Cédula / DNI" class="input-cyber !bg-on-surface/[0.04] !border-none !rounded-2xl" />
+                  <input v-model="profileForm.telefono" type="text" required placeholder="WhatsApp / Celular" class="input-cyber !bg-on-surface/[0.04] !border-none !rounded-2xl" />
+                  <div class="relative">
+                    <input v-model="profileForm.contrasena" :type="showPassword ? 'text' : 'password'" placeholder="Contraseña (Opcional)" class="input-cyber !bg-on-surface/[0.04] !border-none !rounded-2xl" />
+                    <button type="button" @click="showPassword = !showPassword" class="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface/30 hover:text-accent-neon">
+                      <span class="material-symbols-outlined text-xl">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
+                    </button>
+                  </div>
+                </div>
+                <div class="mt-8 flex flex-col-reverse sm:flex-row justify-end items-center gap-2 sm:gap-4">
+                  <button type="button" @click="cancelEnroll" class="w-full sm:w-auto px-6 py-3.5 rounded-xl text-[11px] font-black uppercase tracking-widest text-on-surface/40 hover:text-on-surface/80 hover:bg-on-surface/5 transition-all duration-300">
+                    Cancelar
+                  </button>
+                  <button type="submit" :disabled="savingProfile" class="w-full sm:w-auto min-w-[240px] px-6 py-3.5 rounded-xl bg-accent-neon text-background text-[11px] font-black uppercase tracking-widest shadow-[0_8px_30px_rgba(0,242,254,0.15)] hover:shadow-[0_12px_40px_rgba(0,242,254,0.3)] hover:-translate-y-0.5 active:scale-95 transition-all duration-300 disabled:opacity-50">
+                    {{ savingProfile ? 'Procesando...' : 'Confirmar datos y solicitar' }}
                   </button>
                 </div>
-              </div>
-
-              <div class="flex flex-col gap-4 pt-2 sm:pt-4">
-                <button type="submit" :disabled="savingProfile" class="btn-premium btn-primary-neon !w-full !py-4 sm:!py-5 !text-[11px] font-black uppercase tracking-widest shadow-neon-sm">
-                  {{ savingProfile ? 'Procesando...' : 'Confirmar datos y solicitar' }}
-                </button>
-                <button type="button" @click="cancelEnroll" class="btn-premium btn-primary-solar !w-full !py-4 sm:!py-5 !text-[11px] font-black uppercase tracking-widest shadow-neon-sm">
-                  Cancelar
-                </button>
-              </div>
-            </form>
+              </form>
           </div>
         </div>
       </div>

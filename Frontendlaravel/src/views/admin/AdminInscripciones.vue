@@ -167,6 +167,12 @@
                 </div>
               </td>
             </tr>
+            <tr v-if="!inscripciones.length">
+              <td colspan="6" class="px-8 py-20 text-center text-on-surface/20">
+                <span class="material-symbols-outlined text-4xl mb-3 block">search_off</span>
+                <p class="text-[10px] font-black uppercase tracking-widest">Sin resultados</p>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>

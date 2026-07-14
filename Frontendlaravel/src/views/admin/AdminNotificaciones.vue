@@ -68,6 +68,12 @@
                   </button>
                 </td>
               </tr>
+              <tr v-if="!notifications.length">
+                <td colspan="6" class="px-8 py-20 text-center text-on-surface/20">
+                    <span class="material-symbols-outlined text-4xl mb-3 block">notifications_off</span>
+                    <p class="text-[10px] font-black uppercase tracking-widest"">No hay notificaciones</p>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>

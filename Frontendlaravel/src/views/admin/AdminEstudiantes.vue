@@ -42,6 +42,12 @@
              <span class="relative">Nuevo Estudiante</span>
           </router-link>
         </div>
+        <div class="flex flex-wrap items-center gap-4">
+          <button @click="fetchEstudiantes" class="btn-premium btn-primary-cyan !py-4 px-8 group/btn relative overflow-hidden !border-none shadow-xl hover:shadow-accent-neon/20 transition-all duration-500">
+             <span class="material-symbols-outlined text-lg transition-transform group-hover/btn:rotate-180 duration-500 relative" :class="{ 'animate-spin': loading }">refresh</span>
+             <span class="relative font-bold">Actualizar</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -86,7 +92,11 @@
     </div>
 
     <!-- Students Table -->
-    <div class="glass-card-premium rounded-[40px] overflow-hidden !border-none shadow-2xl">
+    <div class="glass-card-premium rounded-[40px] overflow-hidden shadow-2xl relative min-h-[400px] !border-none">
+      <div v-if="loading" class="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/50 backdrop-blur-sm">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-accent-neon shadow-[0_0_20px_var(--accent-neon)] mb-4"></div>
+        <p class="text-[10px] font-black text-accent-neon uppercase tracking-widest animate-pulse">Cargando estudiantes...</p>
+      </div>
       <div class="overflow-x-auto">
         <table class="w-full min-w-[1000px] text-left border-separate border-spacing-0">
           <thead>
@@ -104,7 +114,7 @@
                 <div class="flex items-center gap-4 group/user">
                   <div class="relative shrink-0">
                     <router-link :to="{ name: 'admin-estudiante-detalle', params: { id: estudiante.id } }" class="relative block">
-                      <div class="w-14 h-14 rounded-[20px] bg-on-surface/5 overflow-hidden group-hover/user:shadow-[0_0_0_2px_rgba(0,255,204,0.4)] transition-all duration-500 shadow-xl">
+                      <div class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-accent-neon to-accent-solar p-[2px]">
                         <img :src="estudiante.imagen_perfil || 'https://i.pravatar.cc/150?u=' + estudiante.id" class="w-full h-full object-cover group-hover/user:scale-110 transition-transform duration-700" />
                         <div class="absolute inset-0 bg-accent-neon/20 opacity-0 group-hover/user:opacity-100 flex items-center justify-center transition-all duration-500 backdrop-blur-[2px]">
                           <span class="material-symbols-outlined text-white text-xl">visibility</span>
@@ -169,14 +179,7 @@
         </table>
       </div>
     </div>
-
-    <!-- Loading Overlay -->
-    <div v-if="loading" class="fixed inset-0 bg-background/60 backdrop-blur-md z-[200] flex items-center justify-center">
-      <div class="flex flex-col items-center gap-6">
-        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-accent-neon shadow-neon-sm"></div>
-        <p class="text-[10px] font-black text-accent-neon uppercase tracking-[0.4em]">Cargando Estudiantes...</p>
-      </div>
-    </div>
+    
   </div>
 </template>
 
