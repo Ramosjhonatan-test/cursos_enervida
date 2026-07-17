@@ -276,9 +276,9 @@ const router = createRouter({
       props: true
     },
     {
-      path: '/verificar/:codigo',
+      path: '/verificar/:codigo?',
       name: 'verificar-certificado',
-      component: () => import('../views/public/VerificarCertificado.vue')
+      component: () => import('../views/public/VerificarCertificadoAntiguos.vue')
     },
     {
       path: '/forgot-password',

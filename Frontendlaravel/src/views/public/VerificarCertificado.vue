@@ -113,7 +113,7 @@
         </div>
 
         <div class="p-5 rounded-2xl bg-red-500/5 text-xs text-red-400/80 leading-relaxed max-w-md mx-auto">
-          ⚠️ <strong>Alerta:</strong> Si el código QR de un certificado físico o digital te dirigió a esta página de alerta, es probable que se trate de un documento duplicado, adulterado o fraudulento.
+           <strong>Alerta:</strong> Si el código QR de un certificado físico o digital te dirigió a esta página de alerta, es probable que se trate de un documento duplicado, adulterado o fraudulento.
         </div>
 
         <div class="pt-4">

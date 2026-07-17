@@ -205,17 +205,44 @@ class CertificadoController extends Controller
     {
         $certificado = Certificado::with(['usuario', 'curso.categoria', 'curso.instructor'])
             ->where('codigo_certificado', $codigo)
-            ->firstOrFail();
+            ->first();
 
-        return response()->json([
-            'valido' => true,
-            'estudiante' => trim(($certificado->usuario->nombres ?? '') . ' ' . ($certificado->usuario->apellidos ?? '')),
-            'ci' => $certificado->usuario->ci ?? 'N/A',
-            'curso' => $certificado->curso->titulo ?? '',
-            'categoria' => $certificado->curso->categoria->nombre ?? '',
-            'fecha_emision' => \Carbon\Carbon::parse($certificado->fecha_emision)->format('d/m/Y'),
-            'codigo_certificado' => $certificado->codigo_certificado,
-            'instructor' => trim(($certificado->curso->instructor->nombres ?? '') . ' ' . ($certificado->curso->instructor->apellidos ?? ''))
-        ]);
+        if ($certificado) {
+            return response()->json([
+                'valido' => true,
+                'estudiante' => trim(($certificado->usuario->nombres ?? '') . ' ' . ($certificado->usuario->apellidos ?? '')),
+                'ci' => $certificado->usuario->ci ?? 'N/A',
+                'curso' => $certificado->curso->titulo ?? '',
+                'categoria' => $certificado->curso->categoria->nombre ?? '',
+                'fecha_emision' => \Carbon\Carbon::parse($certificado->fecha_emision)->format('d/m/Y'),
+                'codigo_certificado' => $certificado->codigo_certificado,
+                'instructor' => trim(($certificado->curso->instructor->nombres ?? '') . ' ' . ($certificado->curso->instructor->apellidos ?? ''))
+            ]);
+        }
+
+        $jsonPath = storage_path('app/certificados.json');
+        if (file_exists($jsonPath)) {
+            $jsonContent = file_get_contents($jsonPath);
+            $participantes = json_decode($jsonContent, true);
+            if (is_array($participantes)) {
+                $codigoLower = strtolower(trim($codigo));
+                foreach ($participantes as $p) {
+                    if (strtolower(trim($p['certificado'])) === $codigoLower || str_contains(strtolower($p['nombre']), $codigoLower) || str_contains(strtolower($p['curso']), $codigoLower)) {
+                        return response()->json([
+                            'valido' => true,
+                            'estudiante' => $p['nombre'],
+                            'ci' => 'N/A',
+                            'curso' => $p['curso'],
+                            'categoria' => 'Campus Enervida',
+                            'fecha_emision' => $p['fecha'],
+                            'codigo_certificado' => $p['certificado'],
+                            'instructor' => 'Ing. Boris Mario Ardaya Limachi'
+                        ]);
+                    }
+                }
+            }
+        }
+
+        abort(404, 'Certificado no encontrado');
     }
 }

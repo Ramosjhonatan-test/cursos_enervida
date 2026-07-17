@@ -60,12 +60,7 @@
               <h3 class="font-lexend text-lg sm:text-xl md:text-2xl font-black leading-tight text-on-surface group-hover:text-accent-neon transition-colors">
                 {{ ins.curso?.titulo }}
               </h3>
-              <span :class="[
-                'rounded-full !border-none px-2 py-1 sm:px-3 sm:py-1 text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] whitespace-nowrap shrink-0',
-                ins.estado === 'COMPLETADO' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-accent-neon/10 text-accent-neon'
-              ]">
-                {{ ins.estado === 'COMPLETADO' ? '100%' : Math.round(ins.porcentaje_progreso || 0) + '%' }}
-              </span>
+              
             </div>
 
             <div class="mt-6 sm:mt-8 flex flex-col gap-3">
@@ -75,10 +70,10 @@
                   {{ ins.estado === 'COMPLETADO' ? 'Finalizado' : Math.round(ins.porcentaje_progreso || 0) + '%' }}
                 </span>
               </div>
-              <div class="glass-progress-bar">
+              <div class="glass-progress-bar h-2.5">
                 <div
                   :class="[
-                    'glass-progress-fill transition-all duration-1000',
+                    'glass-progress-fill h-full transition-all duration-1000',
                     ins.estado === 'COMPLETADO' ? '!bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]' : ''
                   ]"
                   :style="{ width: ins.estado === 'COMPLETADO' ? '100%' : `${ins.porcentaje_progreso || 0}%` }"
@@ -207,3 +202,14 @@ const headerStats = computed(() => {
 })
 
 </script>
+
+<style>
+.glass-progress-bar {
+  @apply w-full overflow-hidden rounded-full bg-white/10 shadow-inner border border-white/10;
+}
+
+.glass-progress-fill {
+  @apply rounded-full bg-gradient-to-r from-accent-neon via-accent-neon to-accent-solar transition-all duration-1000 ease-out;
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.35);
+}
+</style>
