@@ -126,13 +126,7 @@
             <label for="codigo" class="mb-2 block text-[10px] font-black uppercase tracking-[0.3em] text-on-surface/35">
               Código de verificación
             </label>
-            <input
-              id="codigo"
-              v-model="codigoIngresado"
-              type="text"
-              placeholder="Ej. BS02260002"
-              class="w-full rounded-2xl border border-white/10 bg-background/70 px-4 py-3 text-sm font-semibold text-on-surface outline-none ring-0 placeholder:text-on-surface/30 focus:border-accent-neon"
-            />
+            <input id="codigo" v-model="codigoIngresado" type="text" placeholder="Ej. BS02260002" class="w-full rounded-2xl border border-white/10 bg-background/70 px-4 py-3 text-sm font-semibold text-on-surface outline-none ring-0 placeholder:text-on-surface/30 focus:border-accent-neon"/>
           </div>
           <button type="submit" class="btn-premium btn-primary-neon !px-8 !py-3 !text-[11px] sm:!min-w-[180px]" :disabled="loading">
             {{ loading ? 'Verificando...' : 'Verificar' }}

@@ -222,12 +222,11 @@ const handleLogin = async () => {
     clearTimeout(timeoutId)
     console.error('Error en login:', err)
 
-    const errorCode = err.response?.data?.error
-    if (errorCode === 'DISPOSITIVO_NO_AUTORIZADO') {
+    const errorData = err.response?.data?.error
+    if (errorData === 'DISPOSITIVO_NO_AUTORIZADO') {
       error.value = 'Esta cuenta ya está vinculada a otro dispositivo. Contacta al administrador para liberar tu cuenta.'
     } else {
-      const msg = err.response?.data?.message || 'Credenciales invalidas o error de conexion'
-      error.value = msg
+      error.value = err.response?.data?.error || err.response?.data?.message || 'Credenciales invalidas o error de conexion'
     }
 
     notificationStore.addNotification({ title: 'Acceso denegado', message: error.value, type: 'error' })

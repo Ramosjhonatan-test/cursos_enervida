@@ -37,6 +37,7 @@ class AuditoriaService
                 'user_agent'        => $req->header('User-Agent'),
                 'metodo_request'    => $req->method(),
                 'endpoint'          => $req->path(),
+                'fecha_creacion'    => now(),
             ]);
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::warning('AuditoriaService::log error: ' . $e->getMessage());

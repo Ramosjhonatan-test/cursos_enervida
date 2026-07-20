@@ -48,7 +48,13 @@ class EvaluacionController extends Controller
     {
         $evaluacion = Evaluacion::findOrFail($id);
         $anterior = $evaluacion->toArray();
-        $evaluacion->update($request->all());
+        
+        $data = $request->only([
+            'titulo', 'descripcion', 'curso_id', 'nota_aprobacion', 
+            'intentos_permitidos', 'tiempo_limite'
+        ]);
+
+        $evaluacion->update($data);
 
         AuditoriaService::log(
             auth('api')->id(),

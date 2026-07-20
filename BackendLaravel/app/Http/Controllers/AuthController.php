@@ -8,7 +8,9 @@ use App\Models\TokenRecuperacion;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use App\Models\AuditoriaLog;
 
 class AuthController extends Controller
 {
@@ -66,9 +68,20 @@ class AuthController extends Controller
         $correo = $request->email ?? $request->correo;
         $password = $request->password ?? $request->contrasena;
 
+        // Contar intentos fallidos recientes (ventana 30 minutos o desde último login exitoso)
+        $failedCount = $this->getFailedAttempts($correo);
+
+        // Debug logging para trazar intentos y decisiones
+        Log::info("AuthController@login: intento de login para: {$correo}", [
+            'failedCount' => $failedCount,
+            'ip' => $request->ip(),
+            'user_agent' => $request->header('User-Agent', ''),
+        ]);
+
         $usuario = Usuario::where('correo', $correo)->first();
 
-        if (!$usuario || !Hash::check($password, $usuario->contrasena_hash)) {
+        // Usuario inexistente: registrar intento fallido y advertir / bloquear según conteo
+        if (!$usuario) {
             \App\Services\AuditoriaService::log(
                 null,
                 'LOGIN_FALLIDO',
@@ -79,7 +92,83 @@ class AuthController extends Controller
                 ['correo' => $correo],
                 $request
             );
-            return response()->json(['error' => 'Credenciales invalidas'], 401);
+
+            Log::info("AuthController@login: usuario no encontrado para {$correo}", ['failedCount_plus_one' => $failedCount + 1]);
+
+            if ($failedCount + 1 >= 3) {
+                return response()->json(['error' => 'Se han detectado demasiados intentos fallidos. Acceso restringido temporalmente.'], 403);
+            }
+
+            $remaining = 3 - ($failedCount + 1);
+            return response()->json(['error' => "Credenciales invalidas. "], 401);
+            //return response()->json(['error' => "Credenciales invalidas. Te quedan {$remaining} " . ($remaining === 1 ? 'intento' : 'intentos')], 401);
+        }
+
+        // Verificar si la cuenta ya está bloqueada
+        if ($usuario->estado === 'BLOQUEADO') {
+            \App\Services\AuditoriaService::log(
+                $usuario->id,
+                'LOGIN_BLOQUEADO',
+                'Usuario',
+                $usuario->id,
+                "Intento de acceso a cuenta bloqueada: {$correo}",
+                null,
+                null,
+                $request
+            );
+            Log::warning("AuthController@login: intento de acceso a cuenta BLOQUEADA para usuario_id={$usuario->id}", ['correo' => $correo]);
+            return response()->json(['error' => 'Tu cuenta está bloqueada por seguridad debido a múltiples intentos fallidos. Contacta al administrador.'], 403);
+        }
+
+        // Verificar contraseña
+        if (!Hash::check($password, $usuario->contrasena_hash)) {
+            \App\Services\AuditoriaService::log(
+                $usuario->id,
+                'LOGIN_FALLIDO',
+                'Usuario',
+                $usuario->id,
+                "Contraseña incorrecta para: {$correo}",
+                null,
+                ['correo' => $correo],
+                $request
+            );
+
+            Log::info("AuthController@login: contraseña incorrecta para usuario_id={$usuario->id}", ['failedCount' => $failedCount]);
+
+            $currentCount = $failedCount + 1;
+            if ($currentCount >= 3) {
+                $usuario->estado = 'BLOQUEADO';
+                $usuario->save();
+
+                Log::warning("AuthController@login: bloqueando cuenta usuario_id={$usuario->id} tras {$currentCount} intentos fallidos", ['correo' => $correo]);
+
+                // Enviar correo notificando bloqueo
+                try {
+                    Mail::raw("Hola {$usuario->nombres},\n\nHemos bloqueado tu cuenta por seguridad tras múltiples intentos fallidos de inicio de sesión. Contacta al administrador para restaurar el acceso.", function ($message) use ($usuario) {
+                        $message->to($usuario->correo)
+                                ->subject('Cuenta Bloqueada - Enervida LMS');
+                    });
+                Log::info("AuthController@login: intento de envio de correo de bloqueo para usuario_id={$usuario->id}");
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::warning('Error enviando correo de bloqueo: ' . $e->getMessage());
+                }
+
+                \App\Services\AuditoriaService::log(
+                    $usuario->id,
+                    'CUENTA_BLOQUEADA',
+                    'Usuario',
+                    $usuario->id,
+                    "Cuenta bloqueada automaticamente tras {$currentCount} intentos fallidos",
+                    null,
+                    null,
+                    $request
+                );
+
+                return response()->json(['error' => 'Tu cuenta ha sido bloqueada tras varios intentos fallidos. Revisa tu correo'], 403);
+            }
+
+            $remaining = 3 - $currentCount;
+            return response()->json(['error' => "Credenciales invalidas. Te quedan {$remaining} " . ($remaining === 1 ? 'intento' : 'intentos')], 401);
         }
 
         // --- CONTROL DE DISPOSITIVO UNICO ---
@@ -385,5 +474,36 @@ class AuthController extends Controller
             'user' => $usuario ? $usuario->load('rol') : null,
             'expires_in' => auth('api')->factory()->getTTL() * 60
         ]);
+    }
+
+    /**
+     * Cuenta los intentos fallidos recientes para un correo.
+     * Ventana: últimos 30 minutos o desde el último LOGIN exitoso.
+     */
+    private function getFailedAttempts(string $correo): int
+    {
+        $cutoff = now()->subMinutes(30);
+
+        $lastSuccess = AuditoriaLog::where('accion', 'LOGIN')
+            ->whereHas('usuario', function($q) use ($correo) {
+                $q->where('correo', $correo);
+            })
+            ->orderBy('fecha_creacion', 'desc')
+            ->first();
+
+        $startTime = $cutoff;
+        if ($lastSuccess && strtotime($lastSuccess->fecha_creacion) > strtotime($cutoff)) {
+            $startTime = $lastSuccess->fecha_creacion;
+        }
+
+        $count = AuditoriaLog::where('accion', 'LOGIN_FALLIDO')
+            ->where('fecha_creacion', '>', $startTime)
+            ->where(function($q) use ($correo) {
+                $q->whereHas('usuario', function($qq) use ($correo) { $qq->where('correo', $correo); })
+                  ->orWhere('valores_nuevos', 'like', '%"correo":"' . $correo . '"%');
+            })
+            ->count();
+
+        return (int) $count;
     }
 }

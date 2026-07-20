@@ -111,25 +111,30 @@
           <tbody>
             <tr v-for="estudiante in filteredEstudiantes" :key="estudiante.id" class="group hover:bg-accent-neon/[0.02] transition-all duration-500 relative">
               <td class="p-6">
-                <div class="flex items-center gap-4 group/user">
-                  <div class="relative shrink-0">
-                    <router-link :to="{ name: 'admin-estudiante-detalle', params: { id: estudiante.id } }" class="relative block">
-                      <div class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-accent-neon to-accent-solar p-[2px]">
-                        <img :src="estudiante.imagen_perfil || 'https://i.pravatar.cc/150?u=' + estudiante.id" class="w-full h-full object-cover group-hover/user:scale-110 transition-transform duration-700" />
-                        <div class="absolute inset-0 bg-accent-neon/20 opacity-0 group-hover/user:opacity-100 flex items-center justify-center transition-all duration-500 backdrop-blur-[2px]">
-                          <span class="material-symbols-outlined text-white text-xl">visibility</span>
+                  <div class="flex items-center gap-4 group/user">
+                    <div class="relative shrink-0">
+                      <router-link :to="{ name: 'admin-estudiante-detalle', params: { id: estudiante.id } }" class="relative block">
+                        <div class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-slate-200 dark:bg-white/10 p-[1.5px] overflow-hidden transition-all duration-300 group-hover/user:ring-2 group-hover/user:ring-accent-neon/50">
+                          <img 
+                            :src="estudiante.imagen_perfil || 'https://i.pravatar.cc/150?u=' + estudiante.id" 
+                            class="w-full h-full object-cover rounded-[10px] group-hover/user:scale-110 transition-transform duration-700" 
+                          />
+                          <div class="absolute inset-0 bg-black/40 opacity-0 group-hover/user:opacity-100 flex items-center justify-center transition-all duration-500 backdrop-blur-[2px]">
+                            <span class="material-symbols-outlined text-white text-xl">visibility</span>
+                          </div>
                         </div>
-                      </div>
-                    </router-link>
+                      </router-link>
+                    </div>
+                    <div class="flex flex-col">
+                      <router-link :to="{ name: 'admin-estudiante-detalle', params: { id: estudiante.id } }" class="text-base font-black text-on-surface hover:text-accent-neon transition-all duration-300 tracking-tight leading-tight">
+                        {{ estudiante.nombres }} {{ estudiante.apellidos }}
+                      </router-link>
+                      <span class="text-[10px] text-on-surface/40 font-bold uppercase tracking-tighter mt-1">
+                        Registrado: {{ new Date(estudiante.fecha_creacion).toLocaleDateString() }}
+                      </span>
+                    </div>
                   </div>
-                  <div class="flex flex-col">
-                    <router-link :to="{ name: 'admin-estudiante-detalle', params: { id: estudiante.id } }" class="text-base font-black text-on-surface hover:text-accent-neon transition-all duration-300 tracking-tight leading-tight">
-                      {{ estudiante.nombres }} {{ estudiante.apellidos }}
-                    </router-link>
-                    <span class="text-[10px] text-on-surface/40 font-bold uppercase tracking-tighter mt-1">Registrado: {{ new Date(estudiante.fecha_creacion).toLocaleDateString() }}</span>
-                  </div>
-                </div>
-              </td>
+                </td>
               <td class="p-6">
                 <span class="text-xs font-black text-on-surface/60 tracking-wider">{{ estudiante.ci || 'PENDIENTE' }}</span>
               </td>
