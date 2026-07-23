@@ -60,9 +60,9 @@
               <div v-else class="animate-spin rounded-full h-4 w-4 border-t-2 border-primary"></div>
               {{ saving ? 'Guardando...' : 'Guardar perfil' }}
             </button>
-            <button type="button" class="btn-premium glass-card !bg-on-surface/[0.05] !border-none !w-full sm:!w-auto !px-8 !py-5">
+            <router-link to="/student/certificates" class="btn-premium glass-card !bg-on-surface/[0.05] !border-none !w-full sm:!w-auto !px-8 !py-5">
               Ver historial
-            </button>
+            </router-link>
           </div>
         </form>
       </section>

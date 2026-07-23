@@ -60,7 +60,12 @@
           </div>
 
           <div class="mt-10">
-            <a v-if="clase.url_clase" :href="clase.url_clase" target="_blank" class="btn-premium btn-primary-neon !w-full !py-4 !text-[11px] gap-2 shadow-neon-sm">
+            <a
+            v-if="clase.url_clase || clase.sala_jitsi"
+            :href="clase.url_clase || 'https://meet.jit.si/' + clase.sala_jitsi"
+            target="_blank"
+            class="btn-premium btn-primary-neon !w-full !py-4 !text-[11px] gap-2 shadow-neon-sm"
+          >
               Unirme ahora
               <span class="material-symbols-outlined text-lg">open_in_new</span>
             </a>

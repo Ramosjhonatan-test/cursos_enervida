@@ -57,39 +57,49 @@
     <transition name="fade-slide">
       <div v-if="showModal" class="fixed inset-0 z-[300] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-background/80 backdrop-blur-xl" @click="showModal = false"></div>
-        <div class="relative w-full max-w-2xl bg-surface-variant/90 rounded-[60px] p-10 md:p-16 shadow-2xl">
-          <h2 class="text-3xl font-black font-lexend tracking-tighter mb-12">{{ isEditing ? 'Editar' : 'Nueva' }} <span class="text-accent-neon italic text-gradient-neon">Sesión</span></h2>
-          
-          <form @submit.prevent="saveClase" class="space-y-6">
-            <div class="space-y-2">
-              <label class="text-[10px] font-black text-on-surface/40 uppercase tracking-widest px-4">Título de la Sesión</label>
-              <input v-model="form.titulo" type="text" required class="w-full bg-on-surface/5 rounded-2xl px-6 py-4 text-sm font-bold focus:border-accent-neon/50 focus:bg-accent-neon/5 transition-all outline-none" />
+        <div class="relative w-full max-w-3xl rounded-[48px] border border-white/10 bg-surface-variant/95 p-8 md:p-12 shadow-[0_40px_80px_rgba(0,0,0,0.35)] backdrop-blur-xl">
+          <div class="mb-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 class="text-3xl font-black tracking-tight">{{ isEditing ? 'Editar' : 'Nueva' }} <span class="text-accent-neon italic">Sesión</span></h2>
+              <p class="mt-2 text-sm text-on-surface/60">Completa los datos de la clase en vivo para crear una sesión lista para tus estudiantes.</p>
             </div>
+            <button type="button" @click="showModal = false" class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-on-surface/5 text-on-surface/70 transition hover:bg-on-surface/10 hover:text-on-surface">
+              <span class="material-symbols-outlined text-2xl">close</span>
+            </button>
+          </div>
 
-            <div class="space-y-2">
-              <label class="text-[10px] font-black text-on-surface/40 uppercase tracking-widest px-4">Curso Asignado</label>
-              <select v-model="form.curso_id" required class="w-full bg-on-surface/5 rounded-2xl px-6 py-4 text-sm font-bold focus:border-accent-neon/50 focus:bg-accent-neon/5 transition-all outline-none appearance-none">
-                <option v-for="curso in cursos" :key="curso.id" :value="curso.id">{{ curso.titulo }}</option>
-              </select>
-            </div>
-
-            <div class="grid grid-cols-2 gap-6">
+          <form @submit.prevent="saveClase" class="space-y-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div class="space-y-2">
-                <label class="text-[10px] font-black text-on-surface/40 uppercase tracking-widest px-4">Fecha y Hora de Inicio</label>
-                <input v-model="form.fecha_inicio" type="datetime-local" required class="w-full bg-on-surface/5 rounded-2xl px-6 py-4 text-sm font-bold focus:border-accent-neon/50 focus:bg-accent-neon/5 transition-all outline-none" />
+                <label class="text-[10px] font-black text-on-surface/40 uppercase tracking-widest">Título de la Sesión</label>
+                <input v-model="form.titulo" type="text" required class="w-full bg-on-surface/5 rounded-3xl px-6 py-4 text-sm font-bold focus:border-accent-neon/50 focus:bg-accent-neon/5 transition-all outline-none" />
               </div>
               <div class="space-y-2">
-                <label class="text-[10px] font-black text-on-surface/40 uppercase tracking-widest px-4">Nombre de Sala (Jitsi)</label>
-                <input v-model="form.sala_jitsi" type="text" required class="w-full bg-on-surface/5 rounded-2xl px-6 py-4 text-sm font-bold focus:border-accent-neon/50 focus:bg-accent-neon/5 transition-all outline-none" />
+                <label class="text-[10px] font-black text-on-surface/40 uppercase tracking-widest">Curso Asignado</label>
+                <select v-model="form.curso_id" required class="w-full bg-on-surface/5 rounded-3xl px-6 py-4 text-sm font-bold focus:border-accent-neon/50 focus:bg-accent-neon/5 transition-all outline-none appearance-none">
+                  <option disabled value="">Selecciona un curso</option>
+                  <option v-for="curso in cursos" :key="curso.id" :value="curso.id">{{ curso.titulo }}</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div class="space-y-2">
+                <label class="text-[10px] font-black text-on-surface/40 uppercase tracking-widest">Fecha y Hora de Inicio</label>
+                <input v-model="form.fecha_inicio" type="datetime-local" required class="w-full bg-on-surface/5 rounded-3xl px-6 py-4 text-sm font-bold focus:border-accent-neon/50 focus:bg-accent-neon/5 transition-all outline-none" />
+              </div>
+              <div class="space-y-2">
+                <label class="text-[10px] font-black text-on-surface/40 uppercase tracking-widest">Nombre de Sala (Jitsi)</label>
+                <input v-model="form.sala_jitsi" type="text" required class="w-full bg-on-surface/5 rounded-3xl px-6 py-4 text-sm font-bold focus:border-accent-neon/50 focus:bg-accent-neon/5 transition-all outline-none" />
               </div>
             </div>
 
             <div class="space-y-2">
-              <label class="text-[10px] font-black text-on-surface/40 uppercase tracking-widest px-4">Descripción (Opcional)</label>
-              <textarea v-model="form.descripcion" rows="3" class="w-full bg-on-surface/5 rounded-2xl px-6 py-4 text-sm font-bold focus:border-accent-neon/50 focus:bg-accent-neon/5 transition-all outline-none resize-none"></textarea>
+              <label class="text-[10px] font-black text-on-surface/40 uppercase tracking-widest">Descripción (Opcional)</label>
+              <textarea v-model="form.descripcion" rows="4" class="w-full bg-on-surface/5 rounded-3xl px-6 py-4 text-sm font-bold focus:border-accent-neon/50 focus:bg-accent-neon/5 transition-all outline-none resize-none"></textarea>
             </div>
 
-            <div class="flex gap-4 pt-8">
+            <div class="flex flex-col gap-4 pt-4 sm:flex-row">
               <button type="button" @click="showModal = false" class="btn-premium btn-secondary-glass !flex-1 !py-5">Cancelar</button>
               <button type="submit" :disabled="saving" class="btn-premium btn-primary-neon !flex-1 !py-5">{{ saving ? 'Guardando...' : 'Guardar Sesión' }}</button>
             </div>
@@ -175,10 +185,15 @@ const saveClase = async () => {
   saving.value = true
   try {
     const payload = {
-      ...form.value,
-      fecha_inicio: new Date(form.value.fecha_inicio).toISOString()
+      curso_id: form.value.curso_id,
+      titulo: form.value.titulo,
+      descripcion: form.value.descripcion,
+      sala_jitsi: form.value.sala_jitsi,
+      creado_por: form.value.creado_por,
+      fecha_inicio: new Date(form.value.fecha_inicio).toISOString(),
+      fecha_fin: form.value.fecha_fin ? new Date(form.value.fecha_fin).toISOString() : null,
     }
-    
+
     if (isEditing.value) {
       await api.patch(`/clases-en-vivo/${form.value.id}`, payload)
       notificationStore.addNotification({

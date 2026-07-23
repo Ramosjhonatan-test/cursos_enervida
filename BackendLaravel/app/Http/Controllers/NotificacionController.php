@@ -29,7 +29,14 @@ class NotificacionController extends Controller
             $usuario = \App\Models\Usuario::find($data['usuario_id']);
             if ($usuario && $usuario->correo) {
                 \Illuminate\Support\Facades\Mail::to($usuario->correo)->send(
-                    new \App\Mail\NotificacionMailable($data['titulo'], $data['mensaje'])
+                    new \App\Mail\NotificacionMailable(
+                        $data['titulo'],
+                        $data['mensaje'],
+                        null,
+                        null,
+                        $data['tipo'] ?? 'normal',
+                        $usuario
+                    )
                 );
             }
         } catch (\Exception $e) {

@@ -46,6 +46,57 @@
                 <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant/40 text-xl">lock</span>
                 <input v-model="password" class="input-cyber" placeholder="••••••••" type="password" required minlength="8"/>
               </div>
+
+              <!-- Fortaleza de Contraseña -->
+              <div v-if="password" class="mt-3 space-y-3 p-4 rounded-2xl bg-on-surface/[0.02] border border-on-surface/[0.05] transition-all duration-300">
+                <div class="flex items-center justify-between">
+                  <span class="text-[9px] font-black uppercase tracking-wider text-on-surface-variant">Fortaleza:</span>
+                  <span :class="['text-[10px] font-black uppercase tracking-wider transition-colors duration-300', passwordStrength.textClass]">{{ passwordStrength.label }}</span>
+                </div>
+                
+                <!-- Barra de progreso -->
+                <div class="h-1.5 w-full bg-on-surface/10 rounded-full overflow-hidden">
+                  <div 
+                    :class="['h-full rounded-full transition-all duration-500 ease-out', passwordStrength.colorClass]"
+                    :style="{ width: (passwordStrength.score * 25) + '%' }"
+                  ></div>
+                </div>
+
+                <!-- Reglas de seguridad -->
+                <div class="grid grid-cols-2 gap-x-4 gap-y-2 pt-2 border-t border-on-surface/5">
+                  <!-- Rule 1: Longitud -->
+                  <div class="flex items-center gap-2 text-[10px] font-bold transition-all duration-300" :class="passwordRules.length ? 'text-emerald-400' : 'text-on-surface/30'">
+                    <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>8+ caracteres</span>
+                  </div>
+
+                  <!-- Rule 2: Mayúscula -->
+                  <div class="flex items-center gap-2 text-[10px] font-bold transition-all duration-300" :class="passwordRules.uppercase ? 'text-emerald-400' : 'text-on-surface/30'">
+                    <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>Una Mayúscula</span>
+                  </div>
+
+                  <!-- Rule 3: Número -->
+                  <div class="flex items-center gap-2 text-[10px] font-bold transition-all duration-300" :class="passwordRules.number ? 'text-emerald-400' : 'text-on-surface/30'">
+                    <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>Un Número</span>
+                  </div>
+
+                  <!-- Rule 4: Especial -->
+                  <div class="flex items-center gap-2 text-[10px] font-bold transition-all duration-300" :class="passwordRules.special ? 'text-emerald-400' : 'text-on-surface/30'">
+                    <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    <span>Carácter Especial</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div class="space-y-2">
@@ -83,7 +134,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import AppLogo from '@/components/global/AppLogo.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
@@ -100,6 +151,52 @@ const confirmPassword = ref('')
 const error = ref('')
 const success = ref(false)
 const loading = ref(false)
+
+const passwordRules = computed(() => {
+  const pwd = password.value || ''
+  return {
+    length: pwd.length >= 8,
+    uppercase: /[A-Z]/.test(pwd),
+    number: /[0-9]/.test(pwd),
+    special: /[^A-Za-z0-9]/.test(pwd)
+  }
+})
+
+const passwordStrength = computed(() => {
+  const pwd = password.value || ''
+  if (!pwd) return { score: 0, label: '', colorClass: 'bg-transparent', textClass: 'text-on-surface-variant' }
+
+  let score = 0
+  if (passwordRules.value.length) score++
+  if (passwordRules.value.uppercase) score++
+  if (passwordRules.value.number) score++
+  if (passwordRules.value.special) score++
+
+  let label = 'Débil'
+  let colorClass = 'bg-red-500'
+  let textClass = 'text-red-400'
+
+  if (score === 2) {
+    label = 'Moderada'
+    colorClass = 'bg-orange-500'
+    textClass = 'text-orange-400'
+  } else if (score === 3) {
+    label = 'Buena'
+    colorClass = 'bg-emerald-500'
+    textClass = 'text-emerald-400'
+  } else if (score === 4) {
+    label = 'Fuerte'
+    colorClass = 'bg-accent-neon'
+    textClass = 'text-accent-neon'
+  }
+
+  return {
+    score,
+    label,
+    colorClass,
+    textClass
+  }
+})
 const token = ref(route.query.token || '')
 
 onMounted(() => {

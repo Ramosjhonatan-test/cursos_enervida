@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use App\Mail\NotificacionMailable;
 use App\Models\AuditoriaLog;
 
 class AuthController extends Controller
@@ -144,11 +145,15 @@ class AuthController extends Controller
 
                 // Enviar correo notificando bloqueo
                 try {
-                    Mail::raw("Hola {$usuario->nombres},\n\nHemos bloqueado tu cuenta por seguridad tras múltiples intentos fallidos de inicio de sesión. Contacta al administrador para restaurar el acceso.", function ($message) use ($usuario) {
-                        $message->to($usuario->correo)
-                                ->subject('Cuenta Bloqueada - Enervida LMS');
-                    });
-                Log::info("AuthController@login: intento de envio de correo de bloqueo para usuario_id={$usuario->id}");
+                    Mail::to($usuario->correo)->send(new NotificacionMailable(
+                        'Cuenta Bloqueada por Seguridad',
+                        'Detectamos múltiples intentos fallidos de inicio de sesión en tu cuenta. Por motivos de seguridad, hemos bloqueado el acceso temporalmente.',
+                        'Contactar soporte',
+                        env('FRONTEND_URL', config('app.url')),
+                        'critical',
+                        $usuario
+                    ));
+                    Log::info("AuthController@login: intento de envio de correo de bloqueo para usuario_id={$usuario->id}");
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::warning('Error enviando correo de bloqueo: ' . $e->getMessage());
                 }
@@ -385,10 +390,14 @@ class AuthController extends Controller
 
         $resetUrl = env('FRONTEND_URL') . '/reset-password?token=' . $token;
 
-        Mail::raw("Hola {$usuario->nombres},\n\nHaz clic en el siguiente enlace para restablecer tu contrasena:\n{$resetUrl}\n\nEste enlace expira en 1 hora.\n\nSaludos,\nEnervida LMS", function ($message) use ($usuario) {
-            $message->to($usuario->correo)
-                    ->subject('Recuperacion de Contrasena - Enervida LMS');
-        });
+        Mail::to($usuario->correo)->send(new NotificacionMailable(
+            'Recuperación de Contraseña',
+            'Recibimos una solicitud para restablecer la contraseña de tu cuenta en Enervida LMS.',
+            'Restablecer contraseña',
+            $resetUrl,
+            'normal',
+            $usuario
+        ));
 
         \App\Services\AuditoriaService::log(
             $usuario->id,

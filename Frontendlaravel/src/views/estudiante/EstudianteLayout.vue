@@ -397,9 +397,18 @@ function formatTime(value) {
   return new Date(value).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' })
 }
 
-async function handleLogout() {
-  await authStore.logout()
-  router.push('/')
+function handleLogout() {
+  modalStore.openModal({
+    title: 'Cerrar sesión',
+    message: '¿Deseas cerrar sesión y volver a la pantalla de inicio? Tu sesión actual se cerrará.',
+    confirmText: 'Cerrar sesión',
+    cancelText: 'Cancelar',
+    type: 'danger',
+    onConfirm: async () => {
+      await authStore.logout()
+      router.push('/')
+    }
+  })
 }
 
 async function handleCompleteProfile() {
