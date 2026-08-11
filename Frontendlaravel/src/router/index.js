@@ -206,7 +206,7 @@ const router = createRouter({
           path: 'verificacion-qr',
           name: 'admin-verificacion-qr',
           component: () => import('../views/admin/AdminVerificacionQr.vue'),
-          meta: { moduleId: 'CERTIFICADOS' }
+          meta: { moduleId: 'VERIFICACIONES QR' }
         }
       ]
     },
@@ -297,6 +297,11 @@ const router = createRouter({
       name: 'verify-email',
       component: () => import('../views/auth/VerificarEmail.vue'),
       meta: { guest: true }
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: () => import('../views/NotFound.vue')
     }
   ]
 })

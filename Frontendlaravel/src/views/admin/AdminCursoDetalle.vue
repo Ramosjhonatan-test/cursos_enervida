@@ -126,8 +126,8 @@
 
                   <div v-else class="space-y-2">
                     <div class="flex gap-2">
-                      <input type="file" ref="leccionFileInput" :accept="leccionForm.tipo_contenido === 'VIDEO' ? 'video/*' : 'application/pdf'" class="block w-full text-sm text-on-surface/60 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-accent-neon/10 file:text-accent-neon hover:file:bg-accent-neon/20 transition-all"/>
-                      <button type="button" @click="uploadLeccionFile" :disabled="uploadingFile" class="btn-premium glass-card hover:bg-accent-neon/10 text-xs !px-4">
+                      <input type="file" ref="leccionFileInput" :accept="leccionForm.tipo_contenido === 'VIDEO' ? 'video/*' : 'application/pdf'" class="block  w-full text-sm text-on-surface/60 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-accent-neon/10 file:text-accent-neon hover:file:bg-accent-neon/20 transition-all"/>
+                      <button type="button" @click="uploadLeccionFile" :disabled="uploadingFile" class="btn-premium btn-primary-solar !px-6">
                         <span v-if="uploadingFile" class="animate-spin rounded-full h-3 w-3 border-t-2 border-accent-neon inline-block mr-2"></span>
                         <span>{{ uploadingFile ? 'Subiendo...' : 'Subir' }}</span>
                       </button>
@@ -324,7 +324,9 @@ const uploadLeccionFile = async () => {
   uploadingFile.value = true;
   uploadProgress.value = 0;
   try {
+    // Usamos tu misma instancia 'api'. Agregamos 'timeout: 0' abajo:
     const res = await api.post('/uploads', formData, {
+      timeout: 0, // 👈 Desactiva los 20 segundos SOLO para esta ruta de subida
       headers: { 'Content-Type': 'multipart/form-data' },
       onUploadProgress: (progressEvent) => {
         const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
@@ -352,6 +354,7 @@ const uploadLeccionFile = async () => {
     uploadingFile.value = false;
   }
 };
+
 
 const saveLeccion = async () => {
   if (!leccionForm.value.titulo) return;

@@ -112,40 +112,32 @@ class IntentoEvaluacionController extends Controller
     }
 
     /**
-     * Genera la abreviatura de 2 letras a partir del slug del curso.
+     * Genera la abreviatura de 2 o 3 letras a partir del slug del curso.
      */
     private function obtenerAbreviaturaDesdeSlug(string $slug): string
     {
-        $mapa = [
-            'sistemas-fotovoltaicos' => 'FV',
-            'bombeo-solar'           => 'BS',
-            'energia-vivencial'      => 'EV',
-            'energia-virtual'        => 'VT',
-            'curso-pvsyst'           => 'PV',
-            'generacion-distribuida' => 'GD',
-            'eficiencia-energetica'  => 'EE',
-            'huella-de-carbono'      => 'HC',
-            'sostenibilidad-aplicada'=> 'SA',
-            'construccion-sostenible'=> 'CS',
-            'modelo-sapiens-solar'   => 'SS',
-            'lombricultura'          => 'LC',
-        ];
-
-        if (isset($mapa[$slug])) {
-            return $mapa[$slug];
+        $curso = Curso::where('slug', $slug)->first();
+        if ($curso) {
+            return $curso->obtenerPrefijoCertificado();
         }
 
-        // Si no está en el mapa, usamos las iniciales de las palabras del slug
         $palabras = array_filter(
-            explode('-', $slug),
-            fn($p) => !in_array($p, ['de', 'con', 'y', 'a', 'la', 'el', 'en', 'para', 'del', 'los', 'las'])
+            preg_split('/[^a-z0-9]+/i', $slug),
+            fn($p) => !in_array(strtolower($p), ['de', 'con', 'y', 'a', 'la', 'el', 'en', 'para', 'del', 'los', 'las', 'por', 'al', 'lo'])
         );
 
         $palabras = array_values($palabras);
-        if (count($palabras) >= 2) {
+        if (count($palabras) >= 3) {
+            return strtoupper(substr($palabras[0], 0, 1) . substr($palabras[1], 0, 1) . substr($palabras[2], 0, 1));
+        }
+        if (count($palabras) === 2) {
             return strtoupper(substr($palabras[0], 0, 1) . substr($palabras[1], 0, 1));
         }
-        return strtoupper(substr($slug, 0, 2));
+        if (count($palabras) === 1) {
+            return strtoupper(substr($palabras[0], 0, 3));
+        }
+
+        return strtoupper(substr($slug, 0, 3));
     }
 
     /**

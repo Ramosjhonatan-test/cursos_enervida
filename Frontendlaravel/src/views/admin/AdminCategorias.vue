@@ -16,7 +16,7 @@
           </p>
         </div>
         <button @click="toggleForm()" class="btn-premium btn-primary-neon !py-4 px-8 gap-3 group/btn shadow-neon-sm">
-          <span class="material-symbols-outlined text-lg transition-transform" :class="{ 'rotate-45': showForm }">{{ showForm ? 'add' : 'add_category' }}</span>
+          <span class="material-symbols-outlined text-lg transition-transform" :class="{ 'rotate-45': showForm }">{{ showForm ? 'add' : 'add' }}</span>
           <span class="font-black uppercase text-xs tracking-widest">{{ showForm ? 'Cancelar' : 'Nueva Categoría' }}</span>
         </button>
       </div>
@@ -27,7 +27,7 @@
       <div v-if="showForm" class="glass-card p-6 sm:p-8 rounded-[32px] !border-none shadow-2xl">
         <div class="flex items-center gap-3 mb-6">
           <div class="w-10 h-10 rounded-xl bg-accent-neon/10 flex items-center justify-center text-accent-neon">
-            <span class="material-symbols-outlined text-sm">{{ isEditing ? 'edit' : 'add_category' }}</span>
+            <span class="material-symbols-outlined text-sm">{{ isEditing ? 'edit' : 'add' }}</span>
           </div>
           <div>
             <h3 class="text-lg font-black text-on-surface font-lexend tracking-tighter">

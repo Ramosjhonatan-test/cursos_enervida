@@ -2,17 +2,21 @@
 <html lang="es" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/png" href="/hoja.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ENERVIDA </title>
     <!-- Theme Init Script (Prevent FOUC) -->
     <script>
-      if (localStorage.getItem('theme') === 'light') {
-        document.documentElement.classList.remove('dark');
-      } else {
-        document.documentElement.classList.add('dark');
-        localStorage.setItem('theme', 'dark');
-      }
+      const theme = localStorage.getItem('theme');
+
+        document.documentElement.classList.toggle(
+          'dark',
+          theme !== 'light'
+        );
+
+        if (!theme) {
+          localStorage.setItem('theme', 'dark');
+        }
     </script>
     <!-- Fonts & Icons Optimization -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

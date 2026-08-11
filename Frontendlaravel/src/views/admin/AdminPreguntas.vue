@@ -15,15 +15,29 @@
           </p>
         </div>
       </div>
-      <button @click="togglePreguntaForm()" class="btn-premium btn-primary-neon !py-4 gap-2">
+      <button @click="togglePreguntaForm()" :disabled="evaluacion?.preguntas?.length && allocatedPoints >= 100 && !isEditing" class="btn-premium btn-primary-neon !py-4 gap-2 disabled:cursor-not-allowed" :title="evaluacion?.preguntas?.length && allocatedPoints >= 100 && !isEditing ? 'Ya están asignados 100 puntos' : ''">
         <span class="material-symbols-outlined text-sm">{{ showModal ? 'close' : 'add_circle' }}</span>
         {{ showModal ? 'Cancelar' : 'Nueva Pregunta' }}
       </button>
     </div>
+    <div class="glass-card p-4 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div>
+        <p class="text-[10px] font-black uppercase tracking-widest text-on-surface/40">Asignación de puntos</p>
+        <p class="text-2xl font-black" :class="allocatedPoints > 100 ? 'text-red-500' : allocatedPoints === 100 ? 'text-green-500' : 'text-on-surface'">{{ allocatedPoints }} / 100</p>
+      </div>
+      <div class="text-right">
+        <p class="text-[10px] font-black uppercase tracking-widest text-on-surface/40">Estado</p>
+        <p class="text-sm font-black" :class="allocatedPoints > 100 ? 'text-red-500' : allocatedPoints === 100 ? 'text-green-500' : 'text-on-surface'">
+          <template v-if="allocatedPoints > 100">Excedido en {{ allocatedPoints - 100 }} puntos</template>
+          <template v-else-if="allocatedPoints === 100">100% completo</template>
+          <template v-else>Faltan {{ 100 - allocatedPoints }} puntos</template>
+        </p>
+      </div>
+    </div>
 
     <!-- Inline Pregunta Form Panel -->
     <transition name="slide-fade">
-      <div v-if="showModal" class="glass-card p-6 sm:p-8 rounded-[32px]">
+      <div v-if="showModal" ref="formSection" class="glass-card p-6 sm:p-8 rounded-[32px]">
         <div class="flex items-center gap-3 mb-6">
           <div class="w-10 h-10 rounded-xl bg-accent-neon/10 flex items-center justify-center text-accent-neon">
             <span class="material-symbols-outlined text-sm">{{ isEditing ? 'edit' : 'help_outline' }}</span>
@@ -39,7 +53,7 @@
         <form @submit.prevent="savePregunta" class="space-y-6">
           <div class="space-y-2">
             <label class="text-[11px] font-black uppercase tracking-widest text-on-surface/40 ml-1">Enunciado de la pregunta</label>
-            <textarea v-model="form.pregunta" required rows="3" class="input-cyber w-full" placeholder="Ej. ¿Cuál es la capital de...?"></textarea>
+            <textarea v-model="form.pregunta" required rows="3" class="input-cyber w-full" placeholder="Ej. ¿Cual es la pregunta....?"></textarea>
           </div>
           
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -53,12 +67,18 @@
             <div class="space-y-2">
               <label class="text-[11px] font-black uppercase tracking-widest text-on-surface/40 ml-1">Puntos</label>
               <input v-model="form.puntos" type="number" required min="1" class="input-cyber w-full" />
+              <p class="text-[10px] font-black uppercase tracking-widest mt-2" :class="newTotalPoints > 100 ? 'text-red-500' : 'text-on-surface/70'">
+                Total actual: {{ allocatedPoints }} / 100.
+                <template v-if="newTotalPoints > 100">Al guardar llegará a {{ newTotalPoints }}.</template>
+                <template v-else-if="allocatedPoints === 100">Ya tienen 100 puntos asignados.</template>
+                <template v-else>Faltan {{ 100 - allocatedPoints }} puntos para completar.</template>
+              </p>
             </div>
           </div>
 
           <div class="flex justify-end gap-3 pt-2">
             <button type="button" @click="showModal = false" class="btn-premium glass-card justify-center !py-3.5 !px-6">Cancelar</button>
-            <button type="submit" :disabled="saving" class="btn-premium btn-primary-neon justify-center !py-3.5 !px-8 gap-2">
+            <button type="submit" :disabled="saving || !canSubmitPregunta" class="btn-premium btn-primary-neon justify-center !py-3.5 !px-8 gap-2 disabled:cursor-not-allowed">
               <span v-if="saving" class="animate-spin material-symbols-outlined text-sm">refresh</span>
               {{ isEditing ? 'Actualizar Pregunta' : 'Crear Pregunta' }}
             </button>
@@ -79,8 +99,8 @@
       <p class="text-xs font-bold text-on-surface/20 uppercase tracking-widest mt-2">Comienza agregando la primera pregunta del examen</p>
     </div>
 
-    <div v-else class="space-y-8">
-      <div v-for="(pregunta, index) in evaluacion.preguntas" :key="pregunta.id" class="glass-card rounded-[32px] overflow-hidden group">
+    <div v-else class="space-y-8" ref="questionsSection">
+      <div v-for="(pregunta, index) in evaluacion.preguntas" :key="pregunta.id" :id="`pregunta-${pregunta.id}`" class="glass-card rounded-[32px] overflow-hidden group">
         <div class="p-6 sm:p-8 bg-on-surface/5 flex justify-between items-start">
           <div class="flex gap-4">
             <div class="w-10 h-10 rounded-2xl bg-accent-neon/10 flex items-center justify-center text-accent-neon font-black shrink-0">
@@ -112,59 +132,86 @@
         <div class="p-6 sm:p-8 space-y-4">
           <div class="flex items-center justify-between mb-4">
              <h4 class="text-[10px] font-black uppercase tracking-widest text-on-surface/40">Opciones de respuesta</h4>
-             <button @click="toggleAddRespuesta(pregunta.id)" class="btn-premium btn-secondary-glass !py-2 !px-4 !text-[10px] gap-2">
-               <span class="material-symbols-outlined text-xs">{{ activeRespuestaId === pregunta.id ? 'close' : 'add' }}</span>
-               {{ activeRespuestaId === pregunta.id ? 'Cancelar' : 'Agregar Opción' }}
-             </button>
+             <template v-if="pregunta.tipo_pregunta !== 'TRUE_FALSE'">
+               <button @click="toggleAddRespuesta(pregunta.id)" class="btn-premium btn-secondary-glass !py-2 !px-4 !text-[10px] gap-2">
+                 <span class="material-symbols-outlined text-xs">{{ activeRespuestaId === pregunta.id ? 'close' : 'add' }}</span>
+                 {{ activeRespuestaId === pregunta.id ? 'Cancelar' : 'Agregar Opción' }}
+               </button>
+             </template>
+             <template v-else>
+               <span class="text-[10px] font-bold uppercase tracking-widest text-accent-neon">Seleccione cual sera la respuesta correcta</span>
+             </template>
           </div>
 
           <!-- Inline Respuesta Form -->
           <transition name="slide-fade">
-            <form v-if="activeRespuestaId === pregunta.id" @submit.prevent="saveRespuesta" class="mb-6 p-6 rounded-2xl bg-on-surface/[0.02] space-y-4">
+            <form v-if="activeRespuestaId === pregunta.id && pregunta.tipo_pregunta !== 'TRUE_FALSE'" @submit.prevent="saveRespuesta" class="mb-6 p-6 rounded-2xl bg-on-surface/[0.02] space-y-4">
               <div class="space-y-2">
                 <label class="text-[10px] font-black uppercase tracking-widest text-on-surface/40 ml-1">Texto de la respuesta</label>
-                <input v-model="respForm.respuesta" required class="input-cyber w-full !py-3" placeholder="Ej. París" />
+                <input v-model="respForm.respuesta" required class="input-cyber w-full !py-3" placeholder="Ej. Energia" />
               </div>
               <div class="flex items-center justify-between pt-2">
                 <label class="flex items-center gap-3 cursor-pointer group">
-                  <div class="relative">
+                  <div class="relative flex items-center justify-center">
                     <input type="checkbox" v-model="respForm.es_correcta" class="sr-only" />
-                    <div :class="['w-10 h-6 rounded-full transition-colors', respForm.es_correcta ? 'bg-accent-neon' : 'bg-on-surface/10']"></div>
-                    <div :class="['absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform', respForm.es_correcta ? 'translate-x-4' : '']"></div>
+                    <div class="w-10 h-6 rounded-full transition-colors relative" :class="{'bg-accent-neon': respForm.es_correcta, 'bg-gray-200 dark:bg-white/10': !respForm.es_correcta}">
+                      <div class="absolute w-4 h-4 bg-white rounded-full top-1 transition-transform shadow-md border border-gray-200/50 dark:border-transparent" :class="respForm.es_correcta ? 'left-5' : 'left-1'"></div>
+                    </div>
                   </div>
                   <span class="text-[10px] font-black uppercase tracking-widest text-on-surface/60 group-hover:text-accent-neon transition-colors">¿Es la respuesta correcta?</span>
                 </label>
-                <button type="submit" :disabled="savingResp" class="btn-premium btn-accent-neon !py-2 !px-6 text-[10px]">
+                <button type="submit" :disabled="savingResp" class="btn-premium btn-primary-solar !py-4 gap-2">
                   Guardar Opción
                 </button>
               </div>
             </form>
           </transition>
           
-          <div v-if="pregunta.respuestas?.length === 0" class="py-6 text-center bg-on-surface/[0.02] rounded-2xl">
-            <p class="text-[10px] font-black uppercase tracking-widest text-on-surface/20">Sin opciones registradas</p>
-          </div>
+          <!-- ESTADO: Sin opciones registradas -->
+<div v-if="pregunta.respuestas?.length === 0" class="py-6 text-center bg-gray-200/60 dark:bg-white/5 rounded-2xl">
+  <p class="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-white/30">Sin opciones registradas</p>
+</div>
 
-          <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div v-for="resp in pregunta.respuestas" :key="resp.id" 
-                 :class="['p-4 rounded-2xl flex items-center justify-between transition-all group/item', 
-                          resp.es_correcta ? 'bg-accent-neon/5' : 'bg-on-surface/5 hover:bg-on-surface/[0.08]']">
-              <div class="flex items-center gap-3">
-                <span :class="['material-symbols-outlined text-sm', resp.es_correcta ? 'text-accent-neon' : 'text-on-surface/20']">
-                  {{ resp.es_correcta ? 'check_circle' : 'radio_button_unchecked' }}
-                </span>
-                <span :class="['text-sm font-medium', resp.es_correcta ? 'text-on-surface' : 'text-on-surface/60']">{{ resp.respuesta }}</span>
-              </div>
-              <div class="flex gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                <button @click="toggleCorrect(resp)" class="p-1.5 hover:text-accent-neon transition-colors" :title="resp.es_correcta ? 'Quitar correcta' : 'Marcar como correcta'">
-                  <span class="material-symbols-outlined text-xs">verified</span>
-                </button>
-                <button @click="deleteRespuesta(resp.id)" class="p-1.5 hover:text-red-500 transition-colors">
-                  <span class="material-symbols-outlined text-xs">delete</span>
-                </button>
-              </div>
-            </div>
-          </div>
+<!-- ESTADO: Lista de opciones (Recuadro idéntico y fijo para todas las respuestas) -->
+<div v-else class="grid grid-cols-1 md:grid-cols-2 gap-3">
+  <div v-for="resp in pregunta.respuestas" :key="resp.id"
+       class="p-4 rounded-2xl flex items-center justify-between transition-colors duration-150 group/item bg-gray-200/60 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10">
+    
+    <!-- Lado Izquierdo: Icono + Texto -->
+    <div class="flex items-center gap-3 pr-2 min-w-0">
+      <!-- Icono de estado: cambia solo de color si es correcta -->
+      <span class="material-symbols-outlined text-lg shrink-0 transition-colors duration-150"
+            :class="resp.es_correcta ? 'text-accent-neon' : 'text-gray-400 dark:text-white/30 group-hover/item:text-gray-600 dark:group-hover/item:text-white/60'">
+        {{ resp.es_correcta ? 'check_circle' : 'radio_button_unchecked' }}
+      </span>
+      
+      <!-- Texto de la respuesta: cambia negrita/color si es correcta -->
+      <span class="text-sm font-medium truncate"
+            :class="resp.es_correcta ? 'font-semibold text-gray-900 dark:text-white' : 'text-gray-700 dark:text-white/80'">
+        {{ resp.respuesta }}
+      </span>
+    </div>
+
+    <!-- Lado Derecho: Botones de Acción (Verified & Delete) -->
+    <div class="flex items-center gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity duration-150 shrink-0">
+      <!-- Botón: Marcar/Quitar Correcta -->
+      <button @click="toggleCorrect(resp)" 
+              class="p-1.5 rounded-lg transition-colors"
+              :class="resp.es_correcta ? 'text-accent-neon bg-accent-neon/20 hover:bg-accent-neon/30' : 'text-gray-400 dark:text-white/40 hover:text-accent-neon hover:bg-accent-neon/10'"
+              :title="resp.es_correcta ? 'Quitar correcta' : 'Marcar como correcta'">
+        <span class="material-symbols-outlined text-base">verified</span>
+      </button>
+      
+      <!-- Botón: Eliminar Respuesta -->
+      <button v-if="pregunta.tipo_pregunta !== 'TRUE_FALSE'" @click="deleteRespuesta(resp.id)" 
+              class="p-1.5 rounded-lg text-gray-400 dark:text-white/40 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+              title="Eliminar respuesta">
+        <span class="material-symbols-outlined text-base">delete</span>
+      </button>
+    </div>
+
+  </div>
+</div>
         </div>
       </div>
     </div>
@@ -172,7 +219,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/services/api'
 import { useNotificationStore } from '@/stores/notificationStore'
@@ -203,6 +250,27 @@ const respForm = ref({
   respuesta: '',
   es_correcta: false
 })
+const formSection = ref(null)
+const questionsSection = ref(null)
+const lastSavedPreguntaId = ref(null)
+
+const allocatedPoints = computed(() => {
+  if (!evaluacion.value?.preguntas?.length) return 0
+  return evaluacion.value.preguntas.reduce((total, pregunta) => total + Number(pregunta.puntos || 0), 0)
+})
+
+const newTotalPoints = computed(() => {
+  const current = allocatedPoints.value
+  const puntos = Number(form.value.puntos || 0)
+  if (isEditing.value && form.value.id) {
+    const existing = evaluacion.value?.preguntas?.find((p) => p.id === form.value.id)
+    const oldPoints = Number(existing?.puntos || 0)
+    return current - oldPoints + puntos
+  }
+  return current + puntos
+})
+
+const canSubmitPregunta = computed(() => newTotalPoints.value <= 100)
 
 const fetchEvaluacion = async () => {
   loading.value = true
@@ -214,6 +282,23 @@ const fetchEvaluacion = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const scrollToForm = async () => {
+  await nextTick()
+  formSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+const scrollToQuestions = async (preguntaId = null) => {
+  await nextTick()
+  if (preguntaId) {
+    const preguntaElement = document.getElementById(`pregunta-${preguntaId}`)
+    if (preguntaElement) {
+      preguntaElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      return
+    }
+  }
+  questionsSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 const togglePreguntaForm = () => {
@@ -229,6 +314,7 @@ const togglePreguntaForm = () => {
       evaluacion_id: parseInt(route.params.id)
     }
     showModal.value = true
+    scrollToForm()
   }
 }
 
@@ -236,18 +322,31 @@ const editPregunta = (pregunta) => {
   isEditing.value = true
   form.value = { ...pregunta }
   showModal.value = true
+  scrollToForm()
 }
 
 const savePregunta = async () => {
   saving.value = true
   try {
+    if (!canSubmitPregunta.value) {
+      notificationStore.addNotification({
+        title: 'Puntos Excedidos',
+        message: 'No puedes asignar más de 100 puntos en el examen.',
+        type: 'error'
+      })
+      return
+    }
     if (isEditing.value) {
       await api.patch(`/preguntas/${form.value.id}`, form.value)
+      lastSavedPreguntaId.value = form.value.id
     } else {
-      await api.post('/preguntas', form.value)
+      const res = await api.post('/preguntas', form.value)
+      lastSavedPreguntaId.value = res.data.id
     }
     showModal.value = false
     await fetchEvaluacion()
+    await scrollToQuestions(lastSavedPreguntaId.value)
+    lastSavedPreguntaId.value = null
     notificationStore.addNotification({
       title: isEditing.value ? 'Pregunta Actualizada' : 'Pregunta Creada',
       message: 'Los cambios se han guardado exitosamente.',

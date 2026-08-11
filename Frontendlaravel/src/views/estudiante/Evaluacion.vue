@@ -1,284 +1,352 @@
 <template>
-  <div class="min-h-screen bg-background text-on-surface font-lexend relative overflow-hidden">
-    <!-- Fondo con orbes de luz neón flotantes -->
+  <div class="min-h-screen bg-gray-50 dark:bg-background text-gray-900 dark:text-white font-lexend relative overflow-hidden flex flex-col justify-between transition-colors duration-300">
+    <!-- Fondo con orbes neón flotantes -->
     <div class="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
       <div class="absolute -top-40 -left-40 h-[600px] w-[600px] rounded-full bg-accent-neon/5 blur-[150px] animate-pulse" style="animation-duration: 10s;"></div>
       <div class="absolute -bottom-40 -right-40 h-[600px] w-[600px] rounded-full bg-accent-solar/5 blur-[150px] animate-pulse" style="animation-duration: 7s;"></div>
     </div>
 
-    <header class="sticky top-0 z-40 bg-background/85 px-4 py-4 backdrop-blur-xl md:px-8">
-      <div class="absolute bottom-0 left-0 right-0 h-px bg-on-surface/5"></div>
-      <div class="mx-auto flex max-w-6xl flex-col gap-4 md:flex-row md:items-center md:justify-between relative z-10">
-        <div class="flex min-w-0 items-center gap-4">
-          <div class="flex h-12 w-12 items-center justify-center rounded-[18px] bg-accent-neon shadow-lg shadow-accent-neon/20">
-            <span class="material-symbols-outlined font-black text-primary">assignment</span>
+    <!-- Header Sticky Compacto Fix Modo Oscuro -->
+    <header class="sticky top-0 z-40 bg-gray-100 dark:bg-[#0f172a] px-4 py-3.5 border-b border-gray-300/40 dark:border-white/10 md:px-8 shrink-0 transition-colors duration-300">
+      <div class="mx-auto flex max-w-7xl flex-col gap-3 md:flex-row md:items-center md:justify-between relative z-10">
+        <div class="flex min-w-0 items-center gap-3.5">
+          <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-neon/10 text-accent-neon border border-accent-neon/20 shrink-0">
+            <span class="material-symbols-outlined font-black text-xl">assignment</span>
           </div>
           <div class="min-w-0">
-            <h1 class="truncate text-lg font-black tracking-tight md:text-xl">{{ evaluacion?.titulo || 'Evaluacion' }}</h1>
-            <p class="mt-1 text-[10px] font-black uppercase tracking-[0.28em] text-accent-neon">Examen de certificacion</p>
+            <h1 class="truncate text-base font-black tracking-tight text-gray-900 dark:text-white md:text-lg">
+              {{ evaluacion?.titulo || 'Evaluación' }}
+            </h1>
+            <div class="flex items-center gap-2">
+              <p class="text-[9px] font-black uppercase tracking-[0.25em] text-accent-neon">
+                Examen de certificación
+              </p>
+              <!-- Indicator de sincronización/guardado -->
+              <span v-if="!finished && !bloqueado" class="text-[9px] text-emerald-500 font-bold flex items-center gap-1">
+                <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping"></span>
+                Guardado
+              </span>
+            </div>
           </div>
         </div>
 
         <div class="flex items-center justify-between gap-3 md:justify-end">
-          <div v-if="!finished && !bloqueado" :class="['flex items-center gap-3 rounded-2xl bg-on-surface/5 px-4 py-3 border transition-all duration-300', timeLeft < 120 ? 'border-red-500/50 bg-red-500/10 shadow-[0_0_15px_rgba(239,68,68,0.2)] animate-pulse' : 'border-transparent']">
-            <span class="material-symbols-outlined animate-pulse text-accent-neon" :class="{'text-red-500': timeLeft < 120}">timer</span>
-            <span :class="['text-lg font-black tabular-nums md:text-xl', timeLeft < 120 ? 'text-red-500' : 'text-on-surface']">
+          <!-- Temporizador -->
+          <div 
+            v-if="!finished && !bloqueado" 
+            :class="[
+              'flex items-center gap-2.5 rounded-xl bg-gray-200/60 dark:bg-white/10 border border-gray-300/40 dark:border-white/10 px-3.5 py-2 transition-all duration-300',
+              timeLeft < 120 ? 'bg-red-500/10 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.2)] animate-pulse' : ''
+            ]"
+          >
+            <span class="material-symbols-outlined animate-pulse text-accent-neon text-lg" :class="{'text-red-500': timeLeft < 120}">timer</span>
+            <span :class="['text-sm font-black tabular-nums md:text-base', timeLeft < 120 ? 'text-red-500' : 'text-gray-800 dark:text-white']">
               {{ formatTime(timeLeft) }}
             </span>
           </div>
 
           <!-- Intentos restantes -->
-          <div v-if="!finished && !bloqueado && maxIntentos > 0" class="hidden items-center gap-2 rounded-2xl !border-none bg-on-surface/5 px-4 py-3 sm:flex">
+          <div v-if="!finished && !bloqueado && maxIntentos > 0" class="hidden items-center gap-2 rounded-xl bg-gray-200/60 dark:bg-white/10 border border-gray-300/40 dark:border-white/10 px-3.5 py-2 sm:flex">
             <span class="material-symbols-outlined text-accent-solar text-sm">replay</span>
-            <span class="text-xs font-black text-on-surface/60">{{ intentosRestantes }} intento(s)</span>
+            <span class="text-xs font-bold text-gray-700 dark:text-white/80">{{ intentosRestantes }} intento(s)</span>
           </div>
 
-          <button v-if="!finished && !bloqueado" @click="confirmExit" class="flex h-11 w-11 items-center justify-center rounded-2xl bg-on-surface/5 text-on-surface/40 transition-all hover:bg-red-500/10 hover:text-red-500">
-            <span class="material-symbols-outlined">close</span>
+          <!-- Botón de Cerrar -->
+          <button 
+            v-if="!finished && !bloqueado" 
+            @click="confirmExit" 
+            class="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-200/60 dark:bg-white/10 border border-gray-300/40 dark:border-white/10 text-gray-700 dark:text-white/70 hover:text-gray-900 dark:hover:text-white hover:bg-gray-300/60 dark:hover:bg-white/20 transition-all cursor-pointer"
+          >
+            <span class="material-symbols-outlined text-lg">close</span>
           </button>
         </div>
       </div>
     </header>
 
-    <main class="mx-auto flex min-h-[calc(100vh-88px)] w-full max-w-6xl flex-col justify-center p-4 md:p-8 relative z-10">
+    <!-- Contenido Principal -->
+    <main class="mx-auto flex w-full max-w-7xl flex-1 flex-col justify-center px-4 py-6 md:px-8 relative z-10">
+      
+      <!-- Estado de carga -->
       <div v-if="loading" class="flex flex-col items-center gap-6 py-20">
-        <div class="h-16 w-16 animate-spin rounded-full border-t-2 border-accent-neon shadow-[0_0_20px_var(--accent-neon)]"></div>
+        <div class="h-14 w-14 animate-spin rounded-full border-2 border-accent-neon/20 border-t-accent-neon shadow-[0_0_20px_var(--accent-neon)]"></div>
         <p class="text-[10px] font-black uppercase tracking-[0.4em] text-accent-neon">Preparando examen...</p>
       </div>
 
       <!-- Bloqueado: sin intentos disponibles -->
-      <div v-else-if="bloqueado" class="mx-auto w-full max-w-3xl animate-in fade-in">
-        <div class="glass-card-premium relative overflow-hidden rounded-[32px] !border-none bg-red-500/5 p-8 text-center shadow-2xl shadow-red-500/10 md:rounded-[48px] md:p-12">
-          <div class="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-[32px] !border-none bg-red-500/10 text-red-500">
-            <span class="material-symbols-outlined text-5xl font-black">block</span>
+      <div v-else-if="bloqueado" class="mx-auto w-full max-w-2xl animate-in fade-in">
+        <div class="glass-card-premium relative overflow-hidden rounded-3xl bg-white dark:bg-surface border border-red-500/20 p-8 text-center shadow-2xl md:p-12">
+          <div class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500">
+            <span class="material-symbols-outlined text-4xl font-black">block</span>
           </div>
-          <h2 class="text-4xl font-black tracking-tight md:text-5xl">Sin intentos</h2>
-          <p class="mb-6 mt-4 text-sm font-medium uppercase tracking-[0.28em] text-on-surface-variant opacity-70">
+          <h2 class="text-3xl font-black tracking-tight text-gray-900 dark:text-white">
+            Sin <span class="text-red-500">intentos</span>
+          </h2>
+          <p class="mb-4 mt-3 text-xs font-bold uppercase tracking-[0.25em] text-gray-500 dark:text-white/50">
             Has agotado tus {{ maxIntentos }} intento(s) para esta evaluación.
           </p>
-          <p class="mb-10 text-sm leading-7 text-on-surface/50">
+          <p class="mb-8 text-sm text-gray-600 dark:text-white/60">
             Contacta a tu administrador si necesitas intentos adicionales.
           </p>
-          <button @click="exitExam" class="btn-premium btn-secondary-glass !px-8 !py-4 gap-3">
-            <span class="material-symbols-outlined text-lg">arrow_back</span>
+          <button @click="exitExam" class="px-6 py-3 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-700 dark:text-white/80 hover:bg-gray-200 dark:hover:bg-white/10 text-xs font-bold flex items-center justify-center gap-2 mx-auto transition-all cursor-pointer">
+            <span class="material-symbols-outlined text-base">arrow_back</span>
             Volver al curso
           </button>
         </div>
       </div>
 
+      <!-- Vista del Examen -->
       <transition name="fade-slide" mode="out-in">
         <div v-if="!loading && !finished && !bloqueado" :key="currentQuestionIdx" class="w-full">
-          <!-- LMS Grid layout: Izquierda área de preguntas, Derecha panel lateral -->
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             
-            <!-- Columna Izquierda: Preguntas y respuestas -->
-            <div class="lg:col-span-2 space-y-6">
+            <!-- Columna Izquierda: Pregunta + Opciones (8/12) -->
+            <div class="lg:col-span-8 flex flex-col gap-4">
               
-              <!-- Encabezado de Pregunta con progreso horizontal -->
-              <div class="flex flex-col gap-3">
+              <!-- Barra superior con progreso y acciones auxiliares -->
+              <div class="flex flex-col gap-2">
                 <div class="flex items-center justify-between">
-                  <p class="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface/40">Pregunta {{ currentQuestionIdx + 1 }} de {{ evaluacion?.preguntas?.length }}</p>
-                  <span class="rounded-full bg-accent-neon/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-accent-neon">
-                    {{ currentQuestion?.puntos }} puntos
-                  </span>
+                  <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 dark:text-white/50">
+                    Pregunta {{ currentQuestionIdx + 1 }} de {{ evaluacion?.preguntas?.length }}
+                  </p>
+                  
+                  <div class="flex items-center gap-2">
+                    <!-- Botón para Marcar para Revisión -->
+                    <button 
+                      @click="toggleBookmark(currentQuestion?.id)"
+                      :class="[
+                        'flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer border',
+                        flaggedQuestions.includes(currentQuestion?.id)
+                          ? 'bg-amber-500/20 text-amber-500 border-amber-500/40'
+                          : 'bg-gray-100 dark:bg-white/5 text-gray-500 dark:text-white/60 border-gray-200 dark:border-white/10 hover:text-amber-500'
+                      ]"
+                    >
+                      <span class="material-symbols-outlined text-xs">
+                        {{ flaggedQuestions.includes(currentQuestion?.id) ? 'bookmark' : 'bookmark_border' }}
+                      </span>
+                      {{ flaggedQuestions.includes(currentQuestion?.id) ? 'Marcada' : 'Revisar después' }}
+                    </button>
+
+                    <span class="rounded-lg bg-accent-neon/10 border border-accent-neon/20 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-accent-neon">
+                      {{ currentQuestion?.puntos }} puntos
+                    </span>
+                  </div>
                 </div>
-                <div class="h-1.5 w-full bg-on-surface/10 rounded-full overflow-hidden">
+                <div class="h-1.5 w-full bg-gray-200 dark:bg-white/5 rounded-full overflow-hidden border border-gray-200/50 dark:border-white/5">
                   <div class="h-full bg-accent-neon transition-all duration-500" :style="{ width: ((currentQuestionIdx + 1) / evaluacion?.preguntas?.length) * 100 + '%' }"></div>
                 </div>
               </div>
 
-              <!-- Carta de la Pregunta Principal -->
-              <div class="glass-card-premium relative overflow-hidden rounded-[32px] p-6 shadow-2xl md:rounded-[40px] md:p-10 border border-on-surface/5">
-                <div class="absolute left-0 top-0 h-full w-1.5 bg-accent-neon opacity-40"></div>
+              <!-- Tarjeta de la Pregunta (Con select-none para prevención de copia) -->
+              <div class="glass-card-premium relative overflow-hidden rounded-2xl sm:rounded-3xl bg-white dark:bg-surface border border-gray-200 dark:border-white/10 p-6 md:p-8 shadow-2xl flex flex-col justify-between gap-6 transition-all select-none">
+                
+                <div>
+                  <h2 class="mb-6 text-lg font-black leading-snug text-gray-900 dark:text-white md:text-xl">
+                    {{ currentQuestion?.pregunta }}
+                  </h2>
 
-                <h2 class="mb-8 pr-4 text-xl font-black leading-tight md:text-2xl text-on-surface">{{ currentQuestion?.pregunta }}</h2>
-
-                <!-- Respuestas -->
-                <div class="grid grid-cols-1 gap-4">
-                  <button
-                    v-for="(resp, respIdx) in currentQuestion?.respuestas"
-                    :key="resp.id"
-                    @click="selectAnswer(resp.id)"
-                    :class="[
-                      'flex w-full items-center gap-4 rounded-[24px] p-4 text-left transition-all duration-300 border-2',
-                      answers[currentQuestion.id] === resp.id 
-                        ? 'border-accent-neon bg-accent-neon/10 shadow-lg shadow-accent-neon/5' 
-                        : 'border-on-surface/5 bg-on-surface/5 hover:bg-on-surface/10 hover:border-on-surface/10'
-                    ]"
-                  >
-                    <!-- Círculo de Opción A, B, C, D -->
-                    <div
+                  <!-- Opciones de Respuesta -->
+                  <div class="grid grid-cols-1 gap-3">
+                    <button
+                      v-for="(resp, respIdx) in currentQuestion?.respuestas"
+                      :key="resp.id"
+                      @click="selectAnswer(resp.id)"
                       :class="[
-                        'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-black transition-all duration-300',
+                        'flex w-full items-center gap-3.5 rounded-xl p-3.5 text-left border transition-all duration-200 cursor-pointer',
                         answers[currentQuestion.id] === resp.id 
-                          ? 'bg-accent-neon text-primary shadow-[0_0_15px_rgba(16,185,129,0.4)]' 
-                          : 'bg-on-surface/10 text-on-surface/60'
+                          ? 'bg-accent-neon/10 border-accent-neon text-gray-900 dark:text-white shadow-lg shadow-accent-neon/5' 
+                          : 'bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 text-gray-700 dark:text-white/80'
                       ]"
                     >
-                      {{ ['A', 'B', 'C', 'D', 'E', 'F'][respIdx] || '•' }}
-                    </div>
-                    <span :class="['text-sm font-bold leading-6 md:text-base flex-1', answers[currentQuestion.id] === resp.id ? 'text-on-surface' : 'text-on-surface/80']">
-                      {{ resp.respuesta }}
-                    </span>
-                    
-                    <!-- Check dinámico al final -->
-                    <div 
-                      v-if="answers[currentQuestion.id] === resp.id"
-                      class="flex h-6 w-6 items-center justify-center rounded-full bg-accent-neon/20 text-accent-neon animate-in zoom-in duration-200"
-                    >
-                      <span class="material-symbols-outlined text-[14px] font-black">check</span>
-                    </div>
+                      <!-- Indicador A, B, C... -->
+                      <div
+                        :class="[
+                          'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-black transition-all duration-200',
+                          answers[currentQuestion.id] === resp.id 
+                            ? 'bg-accent-neon text-gray-950 shadow-md shadow-accent-neon/20' 
+                            : 'bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60 border border-gray-300/50 dark:border-white/5'
+                        ]"
+                      >
+                        {{ ['A', 'B', 'C', 'D', 'E', 'F'][respIdx] || '•' }}
+                      </div>
+
+                      <span class="text-xs font-bold leading-relaxed md:text-sm flex-1">
+                        {{ resp.respuesta }}
+                      </span>
+                      
+                      <!-- Icono Check -->
+                      <div 
+                        v-if="answers[currentQuestion.id] === resp.id"
+                        class="flex h-5 w-5 items-center justify-center rounded-full bg-accent-neon/20 border border-accent-neon/40 text-accent-neon shrink-0 animate-in zoom-in duration-200"
+                      >
+                        <span class="material-symbols-outlined text-[12px] font-black">check</span>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Pie del Card (Navegación Inline + Desmarcar opción) -->
+                <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-white/10 mt-2">
+                  <button 
+                    @click="prevQuestion" 
+                    :disabled="currentQuestionIdx === 0" 
+                    class="px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-700 dark:text-white/80 hover:bg-gray-200 dark:hover:bg-white/10 text-xs font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-20 cursor-pointer"
+                  >
+                    <span class="material-symbols-outlined text-base">arrow_back</span>
+                    Anterior
+                  </button>
+                  <button
+                    v-if="currentQuestionIdx < (evaluacion?.preguntas?.length - 1)"
+                    @click="nextQuestion"
+                    class="px-6 py-2.5 rounded-xl bg-accent-neon text-gray-950 font-black text-xs uppercase tracking-widest shadow-lg hover:shadow-accent-neon/30 hover:-translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    Siguiente
+                    <span class="material-symbols-outlined text-base font-bold">arrow_forward</span>
+                  </button>
+
+                  <button
+                    v-else
+                    @click="confirmFinish"
+                    :disabled="submitting"
+                    class="px-6 py-2.5 rounded-xl bg-accent-neon text-gray-950 font-black text-xs uppercase tracking-widest shadow-lg hover:shadow-accent-neon/30 hover:-translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-30 disabled:hover:translate-y-0"
+                  >
+                    {{ submitting ? 'Enviando...' : 'Finalizar Examen' }}
+                    <span class="material-symbols-outlined text-base font-bold">send</span>
                   </button>
                 </div>
-              </div>
 
-              <!-- Botones de Navegación de Pie -->
-              <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pt-2">
-                <button @click="prevQuestion" :disabled="currentQuestionIdx === 0" class="btn-premium btn-secondary-glass !w-full sm:!w-auto !justify-center !px-8 !py-4 gap-3 disabled:opacity-20">
-                  <span class="material-symbols-outlined text-sm">arrow_back</span>
-                  Anterior
-                </button>
-
-                <button
-                  v-if="currentQuestionIdx < (evaluacion?.preguntas?.length - 1)"
-                  @click="nextQuestion"
-                  :disabled="answers[currentQuestion?.id] === undefined"
-                  class="btn-premium btn-primary-neon !w-full sm:!w-auto !justify-center !px-8 !py-4 gap-3"
-                >
-                  Siguiente
-                  <span class="material-symbols-outlined text-sm">arrow_forward</span>
-                </button>
-
-                <button
-                  v-else
-                  @click="confirmFinish"
-                  :disabled="answers[currentQuestion?.id] === undefined || submitting"
-                  class="btn-premium btn-primary-neon !w-full sm:!w-auto !justify-center !px-8 !py-4 gap-3 shadow-accent-neon/40"
-                >
-                  {{ submitting ? 'Enviando...' : 'Finalizar examen' }}
-                  <span class="material-symbols-outlined text-sm">send</span>
-                </button>
               </div>
             </div>
 
-            <!-- Columna Derecha: Panel de Navegación de preguntas de la Evaluación -->
-            <div class="space-y-6 lg:sticky lg:top-28">
-              
-              <!-- Cuadrícula de Preguntas (Navegación tipo LMS) -->
-              <div class="glass-card-premium p-6 rounded-[28px] border border-on-surface/5">
-                <div class="flex items-center justify-between mb-4">
-                  <h3 class="text-xs font-black uppercase tracking-wider text-on-surface/40">Panel del Examen</h3>
+            <!-- Columna Derecha: Panel Lateral (4/12) -->
+            <div class="lg:col-span-4 space-y-4">
+              <div class="glass-card-premium p-5 rounded-2xl sm:rounded-3xl bg-white dark:bg-surface border border-gray-200 dark:border-white/10 transition-all">
+                <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-200 dark:border-white/10">
+                  <h3 class="text-xs font-black uppercase tracking-wider text-gray-400 dark:text-white/50">Navegación</h3>
                   <span class="text-[10px] font-black uppercase tracking-wider text-accent-neon">
-                    {{ Object.keys(answers).length }}/{{ evaluacion?.preguntas?.length }} Respondidas
+                    {{ Object.keys(answers).length }}/{{ evaluacion?.preguntas?.length }} Resueltas
                   </span>
                 </div>
                 
-                <div class="grid grid-cols-5 gap-2.5">
+                <!-- Cuadrícula de números -->
+                <div class="grid grid-cols-5 gap-2">
                   <button 
                     v-for="(q, idx) in evaluacion?.preguntas" 
                     :key="q.id"
                     @click="currentQuestionIdx = idx"
                     :class="[
-                      'h-10 w-10 rounded-xl flex items-center justify-center text-xs font-black transition-all border-2 relative',
+                      'h-9 w-9 rounded-xl flex items-center justify-center text-xs font-black transition-all relative border cursor-pointer',
                       currentQuestionIdx === idx 
-                        ? 'border-accent-neon bg-accent-neon/10 text-accent-neon shadow-[0_0_12px_rgba(16,185,129,0.3)]' 
+                        ? 'bg-accent-neon/20 border-accent-neon text-accent-neon shadow-md shadow-accent-neon/10' 
                         : (answers[q.id] !== undefined 
-                            ? 'border-emerald-500/20 bg-emerald-500/5 text-emerald-400' 
-                            : 'border-on-surface/5 bg-on-surface/5 text-on-surface/55 hover:bg-on-surface/10 hover:border-on-surface/10')
+                            ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-bold' 
+                            : 'bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-400 dark:text-white/40 hover:bg-gray-200 dark:hover:bg-white/10 hover:text-gray-700 dark:hover:text-white')
                     ]"
                   >
                     {{ idx + 1 }}
-                    <!-- Mini punto verde si está contestada -->
-                    <div 
-                      v-if="answers[q.id] !== undefined" 
-                      class="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-accent-neon"
-                    ></div>
+
+                    <!-- Indicador visual de Marcada para Revisar -->
+                    <span 
+                      v-if="flaggedQuestions.includes(q.id)" 
+                      class="absolute -top-1 -right-1 h-3.5 w-3.5 rounded-full bg-amber-500 flex items-center justify-center text-[8px] text-black font-bold shadow"
+                    >
+                      ★
+                    </span>
                   </button>
                 </div>
 
-                <!-- Info explicativa -->
-                <div class="mt-5 pt-4 border-t border-on-surface/5 flex flex-wrap gap-4 text-[10px] font-black uppercase tracking-wider text-on-surface/40">
+                <!-- Leyenda del panel -->
+                <div class="mt-5 pt-4 border-t border-gray-200 dark:border-white/10 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-white/40">
                   <div class="flex items-center gap-1.5">
-                    <span class="h-2 w-2 rounded-full bg-accent-neon"></span>
-                    <span>Respondido</span>
+                    <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+                    <span>Resuelta</span>
                   </div>
                   <div class="flex items-center gap-1.5">
-                    <span class="h-2 w-2 rounded-full bg-on-surface/10"></span>
+                    <span class="h-2 w-2 rounded-full bg-amber-500"></span>
+                    <span>Revisar</span>
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="h-2 w-2 rounded-full bg-gray-200 dark:bg-white/10 border border-gray-300 dark:border-white/20"></span>
                     <span>Pendiente</span>
                   </div>
                 </div>
               </div>
-              
             </div>
 
           </div>
         </div>
 
-        <!-- RESULTADOS -->
-        <div v-else-if="finished" class="mx-auto w-full max-w-lg animate-in fade-in px-2">
-          <div class="relative overflow-hidden rounded-[28px] p-6 md:p-8 text-center" style="background: linear-gradient(145deg, rgba(var(--surface-card-rgb, 30,41,59), 0.95), rgba(var(--surface-card-rgb, 30,41,59), 0.7)); backdrop-filter: blur(40px); border: 1px solid rgba(255,255,255,0.06);">
-            <!-- Glow decorativo -->
-            <div :class="['pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 h-48 w-48 rounded-full blur-[80px] opacity-30', passed ? 'bg-accent-neon' : 'bg-red-500']"></div>
+        <!-- Pantalla de Resultados -->
+        <div v-else-if="finished" class="mx-auto w-full max-w-md animate-in fade-in px-2">
+          <div class="glass-card-premium relative overflow-hidden rounded-2xl sm:rounded-3xl bg-white dark:bg-surface border border-gray-200 dark:border-white/10 p-6 text-center shadow-2xl transition-all">
+            <!-- Glow posterior -->
+            <div :class="['pointer-events-none absolute -top-20 left-1/2 -translate-x-1/2 h-44 w-44 rounded-full blur-[70px] opacity-20', passed ? 'bg-accent-neon' : 'bg-red-500']"></div>
 
-            <!-- Anillo de puntaje circular -->
-            <div class="relative z-10 mx-auto mb-5 h-28 w-28">
+            <!-- Ring indicador del puntaje -->
+            <div class="relative z-10 mx-auto mb-4 h-24 w-24">
               <svg viewBox="0 0 120 120" class="h-full w-full -rotate-90">
-                <circle cx="60" cy="60" r="52" fill="none" stroke="currentColor" stroke-width="8" class="text-on-surface/10" />
+                <circle cx="60" cy="60" r="52" fill="none" stroke="currentColor" stroke-width="8" class="text-gray-100 dark:text-white/5" />
                 <circle cx="60" cy="60" r="52" fill="none" stroke-width="8" stroke-linecap="round"
                   :stroke="passed ? 'var(--accent-neon, #10b981)' : '#ef4444'"
                   :stroke-dasharray="2 * Math.PI * 52"
                   :stroke-dashoffset="2 * Math.PI * 52 * (1 - Math.round(score) / 100)"
                   style="transition: stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1);"
-                  :filter="passed ? 'drop-shadow(0 0 6px rgba(16,185,129,0.5))' : 'drop-shadow(0 0 6px rgba(239,68,68,0.4))'"
+                  :filter="passed ? 'drop-shadow(0 0 6px rgba(16,185,129,0.4))' : 'drop-shadow(0 0 6px rgba(239,68,68,0.4))'"
                 />
               </svg>
               <div class="absolute inset-0 flex flex-col items-center justify-center">
-                <span :class="['text-3xl font-black tabular-nums', passed ? 'text-accent-neon' : 'text-red-500']">{{ Math.round(score) }}%</span>
+                <span :class="['text-2xl font-black tabular-nums', passed ? 'text-accent-neon' : 'text-red-500']">
+                  {{ Math.round(score) }}%
+                </span>
               </div>
             </div>
 
-            <!-- Título y subtítulo -->
-            <h2 class="text-2xl font-black tracking-tight md:text-3xl">
-              {{ passed ? '¡Aprobaste!' : 'Sigue intentando' }}
+            <h2 class="text-xl font-black tracking-tight text-gray-900 dark:text-white md:text-2xl">
+              {{ passed ? '¡Examen' : 'Intento' }} <span :class="passed ? 'text-accent-neon' : 'text-red-500'">{{ passed ? 'Aprobado!' : 'No Aprobado' }}</span>
             </h2>
-            <p class="mt-2 mb-5 text-xs font-semibold uppercase tracking-[0.2em] text-on-surface-variant/60">
-              {{ passed ? 'Evaluación completada con éxito' : 'No alcanzaste la nota mínima' }}
+            <p class="mt-1.5 mb-5 text-xs font-medium text-gray-500 dark:text-white/60">
+              {{ passed ? 'Has demostrado los conocimientos requeridos' : 'No alcanzaste la nota mínima necesaria' }}
             </p>
 
-            <!-- Stats en línea horizontal -->
-            <div class="mb-6 flex items-center justify-center gap-3 flex-wrap">
-              <div class="flex items-center gap-2 rounded-full bg-on-surface/5 px-4 py-2">
+            <div class="mb-5 flex items-center justify-center gap-3 flex-wrap">
+              <div class="flex items-center gap-2 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 px-3 py-1.5">
                 <span class="material-symbols-outlined text-sm text-accent-solar">verified</span>
-                <span class="text-xs font-bold text-on-surface/60">Mín. {{ Math.round(evaluacion.nota_aprobacion) }}%</span>
+                <span class="text-xs font-bold text-gray-600 dark:text-white/70">Mínimo: {{ Math.round(evaluacion.nota_aprobacion) }}%</span>
               </div>
-              <div class="flex items-center gap-2 rounded-full bg-on-surface/5 px-4 py-2">
+              <div class="flex items-center gap-2 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 px-3 py-1.5">
                 <span class="material-symbols-outlined text-sm text-accent-neon">replay</span>
-                <span class="text-xs font-bold text-on-surface/60">{{ intentosUsados }}/{{ maxIntentos }} intentos</span>
+                <span class="text-xs font-bold text-gray-600 dark:text-white/70">{{ intentosUsados }}/{{ maxIntentos }} intentos</span>
               </div>
             </div>
 
-            <!-- Botones compactos -->
-            <div class="relative z-10 flex flex-col gap-3">
-              <button v-if="passed" @click="viewCertificate" :disabled="loadingCert" class="btn-premium btn-primary-neon !w-full !justify-center !py-3.5 gap-2 text-sm">
+            <div class="relative z-10 flex flex-col gap-2.5">
+              <button 
+                v-if="passed" 
+                @click="viewCertificate" 
+                :disabled="loadingCert" 
+                class="w-full py-2.5 rounded-xl bg-accent-neon text-gray-950 text-xs font-black uppercase tracking-widest shadow-lg hover:shadow-accent-neon/20 hover:-translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
                 <span class="material-symbols-outlined text-base">{{ loadingCert ? 'hourglass_empty' : 'workspace_premium' }}</span>
-                {{ loadingCert ? 'Generando...' : 'Ver certificado' }}
+                {{ loadingCert ? 'Generando...' : 'Ver Certificado' }}
               </button>
 
-              <button v-if="!passed && intentosRestantes > 0" @click="retryExam" class="btn-premium btn-primary-neon !w-full !justify-center !py-3.5 gap-2 text-sm">
+              <button 
+                v-if="!passed && intentosRestantes > 0" 
+                @click="retryExam" 
+                class="w-full py-2.5 rounded-xl bg-accent-neon text-gray-950 text-xs font-black uppercase tracking-widest shadow-lg hover:shadow-accent-neon/20 hover:-translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
                 <span class="material-symbols-outlined text-base">refresh</span>
-                Reintentar ({{ intentosRestantes }})
+                Reintentar Examen ({{ intentosRestantes }})
               </button>
 
-              <div v-if="!passed && intentosRestantes <= 0" class="flex w-full items-center justify-center gap-2 rounded-2xl bg-red-500/10 px-5 py-3 text-xs font-bold text-red-400">
-                <span class="material-symbols-outlined text-base">block</span>
-                Sin intentos restantes
-              </div>
-
-              <button @click="exitExam" class="btn-premium btn-secondary-glass !w-full !justify-center !py-3.5 gap-2 text-sm">
+              <button 
+                @click="exitExam" 
+                class="w-full py-2.5 rounded-xl bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-700 dark:text-white/80 hover:bg-gray-200 dark:hover:bg-white/10 text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
                 <span class="material-symbols-outlined text-base">arrow_back</span>
                 Volver al curso
               </button>
             </div>
+
           </div>
         </div>
       </transition>
@@ -309,6 +377,7 @@ const bloqueado = ref(false)
 const evaluacion = ref(null)
 const currentQuestionIdx = ref(0)
 const answers = ref({})
+const flaggedQuestions = ref([])
 const score = ref(0)
 const timeLeft = ref(0)
 const timer = ref(null)
@@ -326,7 +395,6 @@ const fetchExam = async () => {
     evaluacion.value = res.data
     maxIntentos.value = evaluacion.value.intentos_permitidos || 1
 
-    // Consultar cuántos intentos ya usó este usuario
     try {
       const intentosRes = await api.get('/intentos-evaluacion')
       const misIntentos = intentosRes.data.filter(
@@ -334,27 +402,33 @@ const fetchExam = async () => {
       )
       intentosUsados.value = misIntentos.length
 
-      // Si ya aprobó, no permitir más intentos
       const yaAprobo = misIntentos.some((i) => i.aprobado === true)
       if (yaAprobo) {
         bloqueado.value = true
         return
       }
 
-      // Si ya agotó intentos
       if (intentosUsados.value >= maxIntentos.value) {
         bloqueado.value = true
         return
       }
     } catch (e) {
-      console.warn('No se pudo verificar intentos previos:', e)
+      console.warn('No se pudieron verificar intentos previos:', e)
     }
 
     timeLeft.value = (evaluacion.value.tiempo_limite || 30) * 60
     startTime.value = new Date()
     startTimer()
   } catch (error) {
-    console.error('Error fetching exam:', error)
+    if (error?.response?.status === 403) {
+      notificationStore.addNotification({
+        title: 'Acceso denegado',
+        message: 'No tienes una inscripción activa para esta evaluación.',
+        type: 'error'
+      })
+      router.replace('/student/my-courses')
+      return
+    }
     notificationStore.addNotification({
       title: 'Error de Acceso',
       message: 'No pudimos cargar la evaluación en este momento.',
@@ -370,6 +444,22 @@ const currentQuestion = computed(() => evaluacion.value?.preguntas[currentQuesti
 
 const selectAnswer = (respId) => {
   answers.value[currentQuestion.value.id] = respId
+}
+
+const clearAnswer = (questionId) => {
+  if (questionId && answers.value[questionId] !== undefined) {
+    delete answers.value[questionId]
+  }
+}
+
+const toggleBookmark = (questionId) => {
+  if (!questionId) return
+  const index = flaggedQuestions.value.indexOf(questionId)
+  if (index > -1) {
+    flaggedQuestions.value.splice(index, 1)
+  } else {
+    flaggedQuestions.value.push(questionId)
+  }
 }
 
 const nextQuestion = () => {
@@ -431,7 +521,7 @@ const finishExam = async () => {
     }
   })
 
-  score.value = (earnedPoints / totalPoints) * 100
+  score.value = totalPoints > 0 ? (earnedPoints / totalPoints) * 100 : 0
   finished.value = true
 
   if (passed.value) {
@@ -454,7 +544,6 @@ const finishExam = async () => {
       respuestas_seleccionadas: answers.value,
     })
 
-    // Actualizar contadores de intentos desde la respuesta del backend
     if (res.data?.intentos_usados) {
       intentosUsados.value = res.data.intentos_usados
     } else {
@@ -552,17 +641,64 @@ const retryExam = () => {
   finished.value = false
   currentQuestionIdx.value = 0
   answers.value = {}
+  flaggedQuestions.value = []
   timeLeft.value = (evaluacion.value.tiempo_limite || 30) * 60
   startTime.value = new Date()
   startTimer()
 }
 
+/* Eventos de Protección Anti-copia y Salida Accidental */
+const handleBeforeUnload = (e) => {
+  if (!finished.value && !bloqueado.value) {
+    e.preventDefault()
+    e.returnValue = ''
+  }
+}
+
+const handleVisibilityChange = () => {
+  if (document.hidden && !finished.value && !bloqueado.value) {
+    notificationStore.addNotification({
+      title: 'Atención',
+      message: 'Has cambiado de pestaña. Mantén la pantalla activa durante el examen.',
+      type: 'warning'
+    })
+  }
+}
+
+const handleSecurityEvents = (e) => {
+  if (finished.value || bloqueado.value) return
+  
+  // Bloquear menú contextual (clic derecho)
+  if (e.type === 'contextmenu') {
+    e.preventDefault()
+  }
+  
+  // Bloquear accesos directos (Ctrl+C, Ctrl+U, F12, Ctrl+Shift+I)
+  if (e.type === 'keydown') {
+    if (
+      (e.ctrlKey && (e.key === 'c' || e.key === 'u' || e.key === 'C' || e.key === 'U')) ||
+      e.key === 'F12' ||
+      (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i'))
+    ) {
+      e.preventDefault()
+    }
+  }
+}
+
 onMounted(() => {
   fetchExam()
+  window.addEventListener('beforeunload', handleBeforeUnload)
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+  document.addEventListener('contextmenu', handleSecurityEvents)
+  document.addEventListener('keydown', handleSecurityEvents)
 })
 
 onUnmounted(() => {
   stopTimer()
+  window.removeEventListener('beforeunload', handleBeforeUnload)
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+  document.removeEventListener('contextmenu', handleSecurityEvents)
+  document.removeEventListener('keydown', handleSecurityEvents)
 })
 </script>
 

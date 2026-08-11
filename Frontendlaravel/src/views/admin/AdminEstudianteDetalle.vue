@@ -164,6 +164,40 @@
                   <button v-if="ins.estado === 'PENDIENTE'" @click="approveEnrollment(ins.id)" class="px-3 py-1.5 bg-emerald-500/10 text-emerald-500 text-[9px] font-black rounded-lg hover:bg-emerald-600 hover:text-white transition-all uppercase tracking-wider">
                     Aprobar Pago
                   </button>
+                  <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                    <button
+                      v-if="hasCertificateForCourse(ins.curso.id)"
+                      @click="emitirCertificadoCurso(ins.curso.id, ins.curso.titulo)"
+                      :disabled="certificateLoadingByCourse[ins.curso.id]"
+                      class="px-3 py-1.5 bg-violet-500/10 text-violet-400 text-[9px] font-black rounded-lg hover:bg-violet-500 hover:text-white transition-all uppercase tracking-wider flex items-center gap-1 disabled:opacity-40"
+                    >
+                      <span v-if="certificateLoadingByCourse[ins.curso.id]" class="material-symbols-outlined text-[12px] animate-spin">sync</span>
+                      <span v-else class="material-symbols-outlined text-[12px]">workspace_premium</span>
+                      Reemitir certificado
+                    </button>
+
+                    <button
+                      v-else-if="hasApprovedAttemptForCourse(ins.curso.id)"
+                      @click="emitirCertificadoCurso(ins.curso.id, ins.curso.titulo)"
+                      :disabled="certificateLoadingByCourse[ins.curso.id]"
+                      class="px-3 py-1.5 bg-violet-500/10 text-violet-400 text-[9px] font-black rounded-lg hover:bg-violet-500 hover:text-white transition-all uppercase tracking-wider flex items-center gap-1 disabled:opacity-40"
+                    >
+                      <span v-if="certificateLoadingByCourse[ins.curso.id]" class="material-symbols-outlined text-[12px] animate-spin">sync</span>
+                      <span v-else class="material-symbols-outlined text-[12px]">workspace_premium</span>
+                      Emitir certificado
+                    </button>
+
+                    <button
+                      v-else
+                      @click="emitirCertificadoCurso(ins.curso.id, ins.curso.titulo, true)"
+                      :disabled="certificateLoadingByCourse[ins.curso.id]"
+                      class="px-3 py-1.5 bg-red-500/10 text-red-400 text-[9px] font-black rounded-lg hover:bg-red-500 hover:text-white transition-all uppercase tracking-wider flex items-center gap-1 disabled:opacity-40"
+                    >
+                      <span v-if="certificateLoadingByCourse[ins.curso.id]" class="material-symbols-outlined text-[12px] animate-spin">sync</span>
+                      <span v-else class="material-symbols-outlined text-[12px]">warning</span>
+                      Emitir manual
+                    </button>
+                  </div>
                 </div>
               </div>
               <h5 class="text-sm font-black text-on-surface mb-4 line-clamp-1 group-hover:text-accent-neon transition-colors">{{ ins.curso.titulo }}</h5>
@@ -250,151 +284,153 @@
       </div>
     </div>
 
-    <!-- Detail Attempt Modal -->
-    <div v-if="showModalDetail && selectedAttempt" class="fixed inset-0 bg-background/80 backdrop-blur-xl z-[250] flex items-center justify-center p-4">
-      <div class="glass-card max-w-4xl w-full max-h-[90vh] flex flex-col rounded-[32px] overflow-hidden shadow-2xl relative border border-on-surface/10 bg-background">
-        
-        <!-- Modal Header -->
-        <div class="p-6 md:p-8 border-b border-on-surface/5 flex items-center justify-between">
-          <div>
-            <h3 class="text-xl font-black text-on-surface font-lexend tracking-tight">
-              Detalle del Intento: <span class="text-accent-neon">{{ selectedAttempt.evaluacion.titulo }}</span>
-            </h3>
-            <p class="text-xs text-on-surface/40 mt-1 uppercase font-bold tracking-wider">
-              Realizado el {{ new Date(selectedAttempt.fecha_fin || selectedAttempt.fecha_inicio).toLocaleString() }}
-            </p>
-          </div>
-          <button @click="closeModalDetail" class="w-10 h-10 rounded-xl bg-on-surface/5 flex items-center justify-center text-on-surface/40 hover:bg-red-500/10 hover:text-red-500 transition-all">
-            <span class="material-symbols-outlined">close</span>
-          </button>
-        </div>
-
-        <!-- Modal Content -->
-        <div class="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 custom-scrollbar">
+    <!-- Detail Attempt Modal (TELEPORTED TO BODY) -->
+    <Teleport to="body">
+      <div v-if="showModalDetail && selectedAttempt" class="fixed inset-0 bg-background/90 backdrop-blur-xl z-[9999] flex items-center justify-center p-4">
+        <div class="bg-surface-container max-w-4xl w-full max-h-[90vh] flex flex-col rounded-[32px] overflow-hidden shadow-2xl relative border border-white/5 bg-opacity-95">
           
-          <!-- Attempt Summary Badges -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 p-6 rounded-2xl bg-on-surface/5">
+          <!-- Modal Header -->
+          <div class="px-6 py-4 md:px-8 md:py-5 flex items-center justify-between shrink-0 bg-transparent border-b border-white/5">
             <div>
-              <p class="text-[9px] font-black text-on-surface/30 uppercase tracking-widest">Nota obtenida</p>
-              <p :class="['text-2xl font-black mt-1', selectedAttempt.aprobado ? 'text-green-500' : 'text-red-500']">
+              <h3 class="text-lg md:text-xl font-black text-on-surface font-lexend tracking-tight">
+                Detalle del Intento: <span class="text-gradient-neon">{{ selectedAttempt.evaluacion.titulo }}</span>
+              </h3>
+              <p class="text-[11px] text-on-surface/50 mt-0.5 uppercase font-bold tracking-wider">
+                Realizado el {{ new Date(selectedAttempt.fecha_fin || selectedAttempt.fecha_inicio).toLocaleString() }}
+              </p>
+            </div>
+            <button @click="closeModalDetail" class="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center text-on-surface/60 hover:bg-red-500/20 hover:text-red-400 transition-all border border-white/5">
+              <span class="material-symbols-outlined text-sm">close</span>
+            </button>
+          </div>
+
+          <!-- Attempt Summary Badges -->
+          <div class="px-6 py-3.5 md:px-8 grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0 bg-transparent border-b border-white/5">
+            <div class="bg-background/40 rounded-xl p-3 border border-white/5 shadow-inner">
+              <p class="text-[8px] font-black text-on-surface/40 uppercase tracking-widest">Nota obtenida</p>
+              <p :class="['text-xl font-black mt-0.5', selectedAttempt.aprobado ? 'text-green-400' : 'text-red-400']">
                 {{ Math.round(selectedAttempt.nota) }}%
               </p>
             </div>
-            <div>
-              <p class="text-[9px] font-black text-on-surface/30 uppercase tracking-widest">Aprobación Mínima</p>
-              <p class="text-2xl font-black text-on-surface mt-1">
+            <div class="bg-background/40 rounded-xl p-3 border border-white/5 shadow-inner">
+              <p class="text-[8px] font-black text-on-surface/40 uppercase tracking-widest">Aprobación Mínima</p>
+              <p class="text-xl font-black text-on-surface mt-0.5">
                 {{ Math.round(selectedAttempt.evaluacion.nota_aprobacion) }}%
               </p>
             </div>
-            <div>
-              <p class="text-[9px] font-black text-on-surface/30 uppercase tracking-widest">Estado</p>
+            <div class="bg-background/40 rounded-xl p-3 border border-white/5 shadow-inner flex flex-col justify-center">
+              <p class="text-[8px] font-black text-on-surface/40 uppercase tracking-widest">Estado</p>
               <div>
-                <span :class="['inline-block mt-2 px-3 py-1 text-[9px] font-black rounded-full uppercase tracking-widest', selectedAttempt.aprobado ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500']">
+                <span :class="['inline-block mt-1 px-2.5 py-0.5 text-[8px] font-black rounded-full uppercase tracking-widest', selectedAttempt.aprobado ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20']">
                   {{ selectedAttempt.aprobado ? 'Aprobado' : 'Reprobado' }}
                 </span>
               </div>
             </div>
-            <div>
-              <p class="text-[9px] font-black text-on-surface/30 uppercase tracking-widest">Duración</p>
-              <p class="text-sm font-bold text-on-surface/60 mt-2">
+            <div class="bg-background/40 rounded-xl p-3 border border-white/5 shadow-inner">
+              <p class="text-[8px] font-black text-on-surface/40 uppercase tracking-widest">Duración</p>
+              <p class="text-xs font-bold text-on-surface/70 mt-1">
                 {{ calculateDuration(selectedAttempt.fecha_inicio, selectedAttempt.fecha_fin) }}
               </p>
             </div>
           </div>
 
-          <!-- No answers warning -->
-          <div v-if="!selectedAttempt.respuestas_seleccionadas" class="text-center py-10 bg-yellow-500/5 rounded-2xl border border-yellow-500/10">
-            <span class="material-symbols-outlined text-yellow-500 text-4xl mb-2">warning</span>
-            <p class="text-xs font-black text-yellow-500 uppercase tracking-widest">Detalle no disponible</p>
-            <p class="text-xs text-on-surface/40 mt-1 max-w-md mx-auto">
-              Este intento fue realizado antes de la actualización que guarda las respuestas seleccionadas del estudiante.
-            </p>
-          </div>
-
-          <!-- Questions Breakdown -->
-          <div v-else class="space-y-6">
-            <h4 class="text-sm font-black text-on-surface uppercase tracking-widest">Desglose de preguntas</h4>
+          <!-- Modal Content (Questions Breakdown) -->
+          <div class="flex-1 overflow-y-auto p-6 md:p-8 space-y-5 custom-scrollbar bg-background/20">
             
-            <div v-for="(pregunta, qIdx) in selectedAttempt.evaluacion.preguntas" :key="pregunta.id" class="p-6 rounded-[24px] bg-on-surface/5 border border-on-surface/5 space-y-4">
-              <div class="flex items-start justify-between gap-4">
-                <div class="flex-1">
-                  <span class="text-[10px] font-black text-accent-neon uppercase tracking-wider">Pregunta {{ qIdx + 1 }} ({{ pregunta.puntos }} pts)</span>
-                  <h5 class="text-sm font-bold text-on-surface mt-1 leading-relaxed">{{ pregunta.pregunta }}</h5>
-                </div>
-                
-                <!-- Badge: Correct / Incorrect / No Answer -->
-                <span v-if="selectedAttempt.respuestas_seleccionadas[pregunta.id] === undefined" class="px-2.5 py-1 text-[9px] font-black rounded-full uppercase tracking-wider bg-on-surface/10 text-on-surface/40 shrink-0">
-                  Sin responder
-                </span>
-                <span v-else-if="isQuestionCorrect(pregunta, selectedAttempt.respuestas_seleccionadas)" class="px-2.5 py-1 text-[9px] font-black rounded-full uppercase tracking-wider bg-green-500/10 text-green-500 flex items-center gap-1 shrink-0">
-                  <span class="material-symbols-outlined text-[10px] font-black">check</span> Correcto
-                </span>
-                <span v-else class="px-2.5 py-1 text-[9px] font-black rounded-full uppercase tracking-wider bg-red-500/10 text-red-500 flex items-center gap-1 shrink-0">
-                  <span class="material-symbols-outlined text-[10px] font-black">close</span> Incorrecto
-                </span>
-              </div>
-
-              <!-- Options Grid -->
-              <div class="grid grid-cols-1 gap-2.5">
-                <div 
-                  v-for="resp in pregunta.respuestas" 
-                  :key="resp.id"
-                  :class="[
-                    'flex items-center gap-3 p-3.5 rounded-xl text-xs transition-all border',
-                    (resp.es_correcta === true || resp.es_correcta == 1)
-                      ? 'bg-green-500/5 border-green-500/20 text-green-400 font-bold'
-                      : (Number(selectedAttempt.respuestas_seleccionadas[pregunta.id]) === Number(resp.id))
-                        ? 'bg-red-500/5 border-red-500/20 text-red-400 font-bold'
-                        : 'bg-on-surface/[0.02] border-transparent text-on-surface/50'
-                  ]"
-                >
-                  <!-- Indicator icon -->
-                  <span class="material-symbols-outlined text-sm font-black shrink-0" :class="[
-                    (resp.es_correcta === true || resp.es_correcta == 1) ? 'text-green-500' : 'text-red-500'
-                  ]">
-                    {{ 
-                      (resp.es_correcta === true || resp.es_correcta == 1) 
-                        ? 'check_circle' 
-                        : (Number(selectedAttempt.respuestas_seleccionadas[pregunta.id]) === Number(resp.id)) 
-                          ? 'cancel' 
-                          : 'radio_button_unchecked' 
-                    }}
-                  </span>
-                  
-                  <div class="flex-1 min-w-0 leading-relaxed">
-                    {{ resp.respuesta }}
-                  </div>
-
-                  <!-- Student choice badge -->
-                  <span v-if="Number(selectedAttempt.respuestas_seleccionadas[pregunta.id]) === Number(resp.id)" class="text-[8px] font-black uppercase tracking-wider bg-on-surface/10 px-2 py-0.5 rounded text-on-surface/60 shrink-0">
-                    Elección del estudiante
-                  </span>
-                </div>
-              </div>
+            <!-- No answers warning -->
+            <div v-if="!selectedAttempt.respuestas_seleccionadas" class="text-center py-14 bg-yellow-500/5 rounded-2xl border border-yellow-500/10">
+              <span class="material-symbols-outlined text-yellow-500 text-4xl mb-3">warning</span>
+              <p class="text-xs font-black text-yellow-500 uppercase tracking-widest">Detalle no disponible</p>
+              <p class="text-xs text-on-surface/40 mt-2 max-w-md mx-auto">
+                Este intento fue realizado antes de la actualización que guarda las respuestas seleccionadas del estudiante.
+              </p>
             </div>
+
+            <!-- Questions Breakdown -->
+            <template v-else>
+              <h4 class="text-xs font-black text-on-surface uppercase tracking-widest opacity-80">Desglose de preguntas</h4>
+              
+              <div v-for="(pregunta, qIdx) in selectedAttempt.evaluacion.preguntas" :key="pregunta.id" class="p-5 rounded-[20px] bg-surface-container border border-white/5 space-y-3 shadow-lg">
+                <div class="flex items-start justify-between gap-4">
+                  <div class="flex-1">
+                    <span class="text-[10px] font-black text-accent-neon uppercase tracking-wider">Pregunta {{ qIdx + 1 }} ({{ pregunta.puntos }} pts)</span>
+                    <h5 class="text-xs md:text-sm font-bold text-on-surface mt-0.5 leading-relaxed">{{ pregunta.pregunta }}</h5>
+                  </div>
+                  
+                  <!-- Badge: Correct / Incorrect / No Answer -->
+                  <span v-if="selectedAttempt.respuestas_seleccionadas[pregunta.id] === undefined" class="px-2.5 py-1 text-[9px] font-black rounded-full uppercase tracking-wider bg-white/5 text-on-surface/50 shrink-0 border border-white/5">
+                    Sin responder
+                  </span>
+                  <span v-else-if="isQuestionCorrect(pregunta, selectedAttempt.respuestas_seleccionadas)" class="px-2.5 py-1 text-[9px] font-black rounded-full uppercase tracking-wider bg-green-500/10 text-green-400 flex items-center gap-1 shrink-0 border border-green-500/20">
+                    <span class="material-symbols-outlined text-[10px] font-black">check</span> Correcto
+                  </span>
+                  <span v-else class="px-2.5 py-1 text-[9px] font-black rounded-full uppercase tracking-wider bg-red-500/10 text-red-400 flex items-center gap-1 shrink-0 border border-red-500/20">
+                    <span class="material-symbols-outlined text-[10px] font-black">close</span> Incorrecto
+                  </span>
+                </div>
+
+                <!-- Options Grid -->
+                <div class="grid grid-cols-1 gap-2">
+                  <div 
+                    v-for="resp in pregunta.respuestas" 
+                    :key="resp.id"
+                    :class="[
+                      'flex items-center gap-3 p-3 rounded-xl text-xs transition-all border',
+                      (resp.es_correcta === true || resp.es_correcta == 1)
+                        ? 'bg-green-500/10 border-green-500/20 text-green-300 font-bold'
+                        : (Number(selectedAttempt.respuestas_seleccionadas[pregunta.id]) === Number(resp.id))
+                          ? 'bg-red-500/10 border-red-500/20 text-red-300 font-bold'
+                          : 'bg-background/40 border-white/5 text-on-surface/50'
+                    ]"
+                  >
+                    <!-- Indicator icon -->
+                    <span class="material-symbols-outlined text-sm font-black shrink-0" :class="[
+                      (resp.es_correcta === true || resp.es_correcta == 1) ? 'text-green-400' : (Number(selectedAttempt.respuestas_seleccionadas[pregunta.id]) === Number(resp.id)) ? 'text-red-400' : 'text-on-surface/30'
+                    ]">
+                      {{ 
+                        (resp.es_correcta === true || resp.es_correcta == 1) 
+                          ? 'check_circle' 
+                          : (Number(selectedAttempt.respuestas_seleccionadas[pregunta.id]) === Number(resp.id)) 
+                            ? 'cancel' 
+                            : 'radio_button_unchecked' 
+                      }}
+                    </span>
+                    
+                    <div class="flex-1 min-w-0">
+                      {{ resp.respuesta }}
+                    </div>
+
+                    <!-- Student choice badge -->
+                    <span v-if="Number(selectedAttempt.respuestas_seleccionadas[pregunta.id]) === Number(resp.id)" class="text-[8px] font-black uppercase tracking-wider bg-white/10 px-2 py-0.5 rounded text-on-surface/80 shrink-0 border border-white/5">
+                      Elección del estudiante
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </template>
+
           </div>
 
-        </div>
-
-        <!-- Modal Footer -->
-        <div class="p-6 border-t border-slate-200/60 dark:border-white/5 flex justify-between items-center">
-          <div class="flex items-center gap-2 bg-slate-200/50 dark:bg-white/5 p-1 rounded-2xl border border-slate-300/60 dark:border-white/10 shadow-sm dark:shadow-inner transition-colors duration-300">
-            <button @click="exportIndividualPDF" :disabled="exportStatus.individualPdf !== 'idle'" class="relative h-10 px-3 sm:px-4 rounded-xl hover:bg-rose-500/15 dark:hover:bg-rose-500/20 text-slate-700 dark:text-white/80 hover:text-rose-600 dark:hover:text-rose-400 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-[10px] sm:text-xs tracking-wider transition-all flex items-center justify-center min-w-[70px] sm:min-w-[85px] overflow-hidden" title="Exportar PDF Individual">
-              <div v-if="exportStatus.individualPdf === 'idle'" class="flex items-center gap-1.5 transition-all">
-                <span class="material-symbols-outlined text-[18px]">picture_as_pdf</span>
-                <span class="hidden sm:inline">PDF</span>
-              </div>
-              <span v-else-if="exportStatus.individualPdf === 'loading'" class="material-symbols-outlined text-[18px] animate-spin text-rose-600 dark:text-rose-400">sync</span>
-              <span v-else-if="exportStatus.individualPdf === 'success'" class="material-symbols-outlined text-[22px] text-emerald-500 animate-bounce">check_circle</span>
+          <!-- Modal Footer -->
+          <div class="p-4 md:p-5 bg-transparent border-t border-white/5 flex justify-between items-center shrink-0">
+            <div class="flex items-center gap-2 bg-background/40 p-1 rounded-xl border border-white/5 shadow-inner">
+              <button @click="exportIndividualPDF" :disabled="exportStatus.individualPdf !== 'idle'" class="relative h-9 px-3 rounded-lg hover:bg-rose-500/15 text-on-surface/80 hover:text-rose-400 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-[10px] tracking-wider transition-all flex items-center justify-center min-w-[70px] overflow-hidden border border-white/5" title="Exportar PDF Individual">
+                <div v-if="exportStatus.individualPdf === 'idle'" class="flex items-center gap-1.5 transition-all">
+                  <span class="material-symbols-outlined text-[16px]">picture_as_pdf</span>
+                  <span class="hidden sm:inline">PDF</span>
+                </div>
+                <span v-else-if="exportStatus.individualPdf === 'loading'" class="material-symbols-outlined text-[16px] animate-spin text-rose-400">sync</span>
+                <span v-else-if="exportStatus.individualPdf === 'success'" class="material-symbols-outlined text-[18px] text-emerald-400 animate-bounce">check_circle</span>
+              </button>
+            </div>
+            <button @click="closeModalDetail" class="py-2.5 px-5 rounded-xl bg-white/5 hover:bg-white/10 text-on-surface text-xs font-black uppercase tracking-wider border border-white/10 transition-all active:scale-95 shadow-lg">
+              Cerrar Detalle
             </button>
           </div>
-          <button @click="closeModalDetail" class="btn-premium btn-secondary-glass !py-3 !px-6">
-            Cerrar Detalle
-          </button>
-        </div>
 
+        </div>
       </div>
-    </div>
+    </Teleport>
 
     <!-- Loading Overlay -->
     <div v-if="loading" class="fixed inset-0 bg-background/60 backdrop-blur-md z-[200] flex items-center justify-center">
@@ -407,7 +443,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed,watch } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/services/api'
 import pdfMake from 'pdfmake/build/pdfmake'
@@ -433,11 +469,14 @@ const exportStatus = ref({
 const pdfLoadingId = ref(null)
 const allPdfLoading = ref(false)
 const selectedAttempt = ref(null)
+const certificateLoadingByCourse = ref({})
 
 const showAttemptDetail = (intento) => {
   selectedAttempt.value = intento
   showModalDetail.value = true
 }
+
+
 
 const closeModalDetail = () => {
   showModalDetail.value = false
@@ -549,6 +588,14 @@ const correctCount = computed(() => {
     isQuestionCorrect(p, selectedAttempt.value.respuestas_seleccionadas)
   ).length
 })
+
+watch(() => showModalDetail.value, (isOpen) => {
+  if (isOpen) {
+    document.body.style.overflow = 'hidden';
+  } else {
+    document.body.style.overflow = '';
+  }
+});
 
 const loadLogoToPngBase64 = (url) => {
   return new Promise((resolve, reject) => {
@@ -945,6 +992,71 @@ const fetchEstudiante = async () => {
     console.error('Error fetching student detail:', error)
   } finally {
     loading.value = false
+  }
+}
+
+const hasCertificateForCourse = (cursoId) => {
+  if (!estudiante.value?.certificados?.length) return false
+  return estudiante.value.certificados.some(cert => Number(cert.curso_id) === Number(cursoId))
+}
+
+const hasApprovedAttemptForCourse = (cursoId) => {
+  if (!estudiante.value?.intentos_evaluacion?.length) return false
+  return estudiante.value.intentos_evaluacion.some(intento => {
+    return Number(intento.evaluacion?.curso?.id) === Number(cursoId) && intento.aprobado
+  })
+}
+
+const downloadCertificateById = async (certId, courseTitle = 'Certificado') => {
+  const response = await api.get(`/certificados/${certId}/download`, { responseType: 'blob' })
+  const url = window.URL.createObjectURL(new Blob([response.data]))
+  const link = document.createElement('a')
+  link.href = url
+  link.setAttribute('download', `Certificado-${courseTitle || certId}.pdf`)
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.URL.revokeObjectURL(url)
+}
+
+const emitirCertificadoCurso = async (cursoId, cursoTitulo, force = false) => {
+  if (!estudiante.value?.id) return
+
+  certificateLoadingByCourse.value[cursoId] = true
+
+  try {
+    const response = await api.post('/certificados/emitir', {
+      usuario_id: estudiante.value.id,
+      curso_id: cursoId,
+      force,
+    })
+
+    const certificado = response.data?.certificado
+    if (!certificado?.id) {
+      throw new Error('No se obtuvo el certificado generado')
+    }
+
+    await downloadCertificateById(certificado.id, cursoTitulo)
+    notificationStore.addNotification({
+      title: 'Certificado listo',
+      message: response.data?.created
+        ? force
+          ? 'Certificado emitido manualmente y descargado correctamente.'
+          : 'El certificado fue emitido y se descargó correctamente.'
+        : 'Se reemitió el certificado correctamente.',
+      type: 'success',
+    })
+
+    await fetchEstudiante()
+  } catch (error) {
+    console.error('Error emitting certificate:', error)
+    notificationStore.addNotification({
+      title: 'No se pudo emitir el certificado',
+      message: error?.response?.data?.message || 'El estudiante no tiene una evaluación aprobada para este curso.',
+      type: 'error',
+    })
+  } finally {
+    certificateLoadingByCourse.value[cursoId] = false
   }
 }
 

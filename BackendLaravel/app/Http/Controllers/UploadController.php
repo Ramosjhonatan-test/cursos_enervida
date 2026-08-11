@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 
 class UploadController extends Controller
 {
@@ -14,6 +15,31 @@ class UploadController extends Controller
     private function getUploadBasePath(): string
     {
         return public_path('uploads');
+    }
+
+    private function sanitizeFolder(string $folder): string
+    {
+        $clean = preg_replace('/[^A-Za-z0-9_\-]/', '', $folder);
+        return $clean === '' ? 'general' : $clean;
+    }
+
+    private function sanitizeFilename(string $filename): string
+    {
+        $name = pathinfo($filename, PATHINFO_FILENAME);
+        $ext = pathinfo($filename, PATHINFO_EXTENSION);
+        return time() . '_' . Str::slug($name) . '.' . strtolower($ext);
+    }
+
+    private function sanitizeRelativePath(string $path): ?string
+    {
+        $normalized = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $path);
+        $normalized = trim($normalized, DIRECTORY_SEPARATOR);
+
+        if ($normalized === '' || str_contains($normalized, '..')) {
+            return null;
+        }
+
+        return str_replace(DIRECTORY_SEPARATOR, '/', $normalized);
     }
 
     /**
@@ -32,11 +58,11 @@ class UploadController extends Controller
     public function upload(Request $request)
     {
         $request->validate([
-            'file'   => 'required|file|max:921600', // max 900MB para videos
+            'file'   => 'required|file|max:921600|mimes:jpg,jpeg,png,gif,pdf,mp4,webm,mov,avi,mp3,doc,docx,xls,xlsx,ppt,pptx,zip',
             'folder' => 'nullable|string|max:100',
         ]);
 
-        $folder    = $request->input('folder', 'general');
+        $folder    = $this->sanitizeFolder($request->input('folder', 'general'));
         $uploadDir = $this->getUploadBasePath() . '/' . $folder;
 
         // Crear directorio si no existe
@@ -45,9 +71,7 @@ class UploadController extends Controller
         }
 
         $file         = $request->file('file');
-        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-        $extension    = $file->getClientOriginalExtension();
-        $filename     = time() . '_' . \Illuminate\Support\Str::slug($originalName) . '.' . $extension;
+        $filename     = $this->sanitizeFilename($file->getClientOriginalName());
 
         $file->move($uploadDir, $filename);
 
@@ -163,7 +187,20 @@ class UploadController extends Controller
             ];
         }
 
-        // 5. Certificados emitidos (PDF generado)
+        // 5. Inscripciones (comprobante de pago)
+        $inscripcion = \App\Models\Inscripcion::where('comprobante_pago_url', 'like', "%{$filename}%")
+            ->orWhere('comprobante_pago_url', 'like', "%{$url}%")
+            ->first();
+        if ($inscripcion) {
+            $usuarioNombre = optional($inscripcion->usuario)->nombres ? trim(optional($inscripcion->usuario)->nombres . ' ' . optional($inscripcion->usuario)->apellidos) : 'Sin usuario';
+            $usages[] = [
+                'type' => 'Inscripción (Comprobante de Pago)',
+                'name' => $usuarioNombre !== '' ? $usuarioNombre : "Inscripción #{$inscripcion->id}",
+                'id'   => $inscripcion->id,
+            ];
+        }
+
+        // 6. Certificados emitidos (PDF generado)
         $cert = \App\Models\Certificado::where('pdf_url', 'like', "%{$filename}%")
             ->orWhere('pdf_url', 'like', "%{$url}%")
             ->first();
@@ -183,6 +220,10 @@ class UploadController extends Controller
      */
     public function remove(string $filename)
     {
+        if ($filename !== basename($filename)) {
+            return response()->json(['message' => 'Nombre de archivo inválido'], 400);
+        }
+
         $basePath = $this->getUploadBasePath();
         $allFiles = File::allFiles($basePath);
 
@@ -207,6 +248,11 @@ class UploadController extends Controller
         $basePath     = $this->getUploadBasePath();
 
         foreach ($filenames as $filename) {
+            if ($filename !== basename($filename)) {
+                $errors[] = "Nombre de archivo inválido: {$filename}.";
+                continue;
+            }
+
             $url    = $this->getPublicUrl($filename);
             $usages = $this->checkUsage($filename, $url);
 
@@ -245,21 +291,23 @@ class UploadController extends Controller
      */
     public function serveWildcardFile(string $path)
     {
-        // Primero intentar en public/uploads/
-        $publicPath = public_path('uploads/' . $path);
-        if (File::exists($publicPath)) {
+        $sanitized = $this->sanitizeRelativePath($path);
+        if ($sanitized === null) {
+            abort(400, 'Ruta de archivo inválida.');
+        }
+
+        $publicPath = public_path('uploads/' . $sanitized);
+        if (File::exists($publicPath) && File::isFile($publicPath)) {
             return response()->file($publicPath);
         }
 
-        // Fallback: intentar ruta directa en public/
-        $directPath = public_path($path);
-        if (File::exists($directPath)) {
+        $directPath = public_path($sanitized);
+        if (File::exists($directPath) && File::isFile($directPath)) {
             return response()->file($directPath);
         }
 
-        // Fallback legacy: storage/app/public/
-        $storagePath = storage_path('app/public/' . $path);
-        if (File::exists($storagePath)) {
+        $storagePath = storage_path('app/public/' . $sanitized);
+        if (File::exists($storagePath) && File::isFile($storagePath)) {
             return response()->file($storagePath);
         }
 

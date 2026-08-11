@@ -66,6 +66,29 @@ class CursoController extends Controller
     public function show(string $id)
     {
         $curso = Curso::with(['categoria', 'instructor', 'modulos.lecciones', 'plantilla_certificado', 'evaluaciones'])->findOrFail($id);
+
+        if (auth('api')->check()) {
+            $user = auth('api')->user();
+            $user->loadMissing('rol');
+
+            $puedeGestionarCurso = $user->isAdmin() || $user->isInstructor() || $user->hasAdminModule('CURSOS');
+            $cursoPublicado = (bool) $curso->publicado;
+
+            if (!$puedeGestionarCurso && !$cursoPublicado) {
+                $userId = $user->id;
+                $inscripcion = \App\Models\Inscripcion::where('usuario_id', $userId)
+                    ->where('curso_id', $curso->id)
+                    ->whereIn('estado', ['ACTIVO', 'COMPLETADO'])
+                    ->first();
+
+                if (!$inscripcion) {
+                    return response()->json([
+                        'message' => 'No tienes acceso a este curso.'
+                    ], 403);
+                }
+            }
+        }
+
         return response()->json($curso);
     }
 
@@ -76,7 +99,22 @@ class CursoController extends Controller
     {
         $curso = Curso::findOrFail($id);
         $anterior = $curso->toArray();
-        $curso->update($request->all());
+        $data = $request->validate([
+            'categoria_id' => 'nullable|exists:categorias,id',
+            'instructor_id' => 'nullable|exists:usuarios,id',
+            'titulo' => 'nullable|string|max:255',
+            'slug' => 'nullable|string|unique:cursos,slug,' . $id,
+            'descripcion_corta' => 'nullable|string',
+            'descripcion' => 'nullable|string',
+            'miniatura_url' => 'nullable|string',
+            'nivel' => 'nullable|string',
+            'tipo_curso' => 'nullable|string',
+            'certificado_habilitado' => 'nullable|boolean',
+            'publicado' => 'nullable|boolean',
+            'precio' => 'nullable|numeric',
+            'edicion_actual' => 'nullable|integer|min:1|max:99',
+        ]);
+        $curso->update($data);
 
         AuditoriaService::log(
             auth('api')->id(),

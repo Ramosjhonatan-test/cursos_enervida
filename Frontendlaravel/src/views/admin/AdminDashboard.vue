@@ -362,10 +362,11 @@
 </template>
 
 <script setup>
-import { ref, shallowRef, onMounted, computed, onUnmounted } from 'vue'
+import { ref, shallowRef, onMounted, computed, onUnmounted, watch } from 'vue'
 import { Bar, Doughnut, Line } from 'vue-chartjs'
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, ArcElement, LineElement, PointElement, Filler, Tooltip, Legend } from 'chart.js'
 import api from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
 import jsPDF from 'jspdf'
 import * as XLSX from 'xlsx'
 
@@ -392,7 +393,7 @@ const expandChart = (config) => {
 }
 
 
-// Función auxiliar para cargar logos locales (.webp o .png) y convertirlos a PNG Base64 real
+// Función auxiliar para cargar logos locales y convertirlos a PNG Base64 real
 const loadLogoToPngBase64 = (url) => {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -410,6 +411,26 @@ const loadLogoToPngBase64 = (url) => {
   });
 };
 
+// Helper seguro para convertir los SVG en imágenes PNG Base64 incrustables en pdfmake
+const svgToPngBase64 = (svgString, width = 48, height = 48) => {
+  return new Promise((resolve) => {
+    const encoded = encodeURIComponent(svgString);
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = () => resolve(null);
+    img.src = `data:image/svg+xml;charset=utf-8,${encoded}`;
+  });
+};
+
 const exportChart = async (format) => {
   if (!expandedChart.value) return;
   if (exportStatus.value[format] !== 'idle') return;
@@ -418,14 +439,16 @@ const exportChart = async (format) => {
   const originalTitle = expandedChart.value.title;
   exportStatus.value[format] = 'loading';
   
+  const pageWidth = 842.89; // Ancho A4 Landscape en puntos
+  const usableWidth = pageWidth - 80; // Margen izquierdo y derecho de 40
+
   try {
     let downloadAction = null;
     
-    // Simular un sutil tiempo de procesamiento para el spinner de la interfaz
     await new Promise(r => setTimeout(r, 600));
 
     // ==========================================
-    // 1. EXPORTAR A EXCEL (CON EXCELJS)
+    // 1. EXPORTAR A EXCEL
     // ==========================================
     if (format === 'excel') {
       const data = expandedChart.value.data;
@@ -435,13 +458,11 @@ const exportChart = async (format) => {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Datos Estadísticos');
 
-      // Configurar las columnas de la tabla
       worksheet.columns = [
         { header: 'CONCEPTO / ETIQUETA', key: 'label', width: 35 },
         { header: 'VALOR NUMÉRICO', key: 'value', width: 20 }
       ];
 
-      // Estilizar la cabecera (Azul Oscuro Corporativo #2C3E50)
       const headerRow = worksheet.getRow(1);
       headerRow.height = 26;
       headerRow.eachCell((cell) => {
@@ -450,24 +471,14 @@ const exportChart = async (format) => {
         cell.alignment = { vertical: 'middle', horizontal: 'center' };
       });
 
-      // Llenar con los datos dinámicos del gráfico
       labels.forEach((label, index) => {
-        const row = worksheet.addRow({
-          label: label,
-          value: dataset.data[index]
-        });
+        const row = worksheet.addRow({ label: label, value: dataset.data[index] });
         row.height = 20;
-        
-        // Formato para columna de etiquetas
         row.getCell(1).font = { name: 'Segoe UI', size: 10 };
         row.getCell(1).alignment = { vertical: 'middle', horizontal: 'left' };
-        
-        // Formato numérico profesional para los valores de la derecha
         row.getCell(2).font = { name: 'Segoe UI', size: 10, bold: true };
         row.getCell(2).alignment = { vertical: 'middle', horizontal: 'right' };
         row.getCell(2).numFmt = '#,##0.00'; 
-
-        // Líneas divisorias suaves entre celdas
         row.eachCell(cell => {
           cell.border = { bottom: { style: 'thin', color: { argb: 'FFE0E0E0' } } };
         });
@@ -480,7 +491,7 @@ const exportChart = async (format) => {
       };
 
     // ==========================================
-    // 2. EXPORTAR COMO IMAGEN PNG CRUDA
+    // 2. EXPORTAR COMO IMAGEN PNG
     // ==========================================
     } else if (format === 'image') {
       const chartInstance = chartRef.value?.chart;
@@ -493,37 +504,27 @@ const exportChart = async (format) => {
       downloadAction = () => a.click();
 
     // ==========================================
-    // 3. EXPORTAR A PDF (CON PDFMAKE) - MEJORADO
+    // 3. EXPORTAR A PDF (CON MEMBRETE Y PIE INSTITUCIONAL)
     // ==========================================
     } else if (format === 'pdf') {
       const chartInstance = chartRef.value?.chart;
       if (!chartInstance) throw new Error("Chart not ready");
 
-      // --- 🌟 AJUSTE CRÍTICO: FORZAR COLORES OSCUROS PARA ALTA LEGIBILIDAD EN IMPRESIÓN ---
-      // Respaldamos los colores actuales de la pantalla (Modo Oscuro / Personalizados)
       const originalXColor = chartInstance.options.scales?.x?.ticks?.color;
       const originalYColor = chartInstance.options.scales?.y?.ticks?.color;
       const originalGridXColor = chartInstance.options.scales?.x?.grid?.color;
       const originalGridYColor = chartInstance.options.scales?.y?.grid?.color;
       const originalLegendColor = chartInstance.options.plugins?.legend?.labels?.color;
 
-      // Forzar temporalmente fuentes oscuras e institucionales (#2C3E50) sobre el papel blanco
       if (chartInstance.options.scales?.x?.ticks) chartInstance.options.scales.x.ticks.color = '#2C3E50';
       if (chartInstance.options.scales?.y?.ticks) chartInstance.options.scales.y.ticks.color = '#2C3E50';
       if (chartInstance.options.plugins?.legend?.labels) chartInstance.options.plugins.legend.labels.color = '#2C3E50';
-      
-      // Pintar las rejillas internas del gráfico con un gris muy suave y limpio
       if (chartInstance.options.scales?.x?.grid) chartInstance.options.scales.x.grid.color = '#E2E8F0';
       if (chartInstance.options.scales?.y?.grid) chartInstance.options.scales.y.grid.color = '#E2E8F0';
 
-      // Actualizar el estado interno del gráfico inmediatamente (sin animación de pantalla)
       chartInstance.update('none'); 
-
-      // Capturar la imagen nítida en Base64 con la configuración de contraste lista
       const base64Image = chartInstance.toBase64Image();
 
-      // --- RESTAURAR CONFIGURACIÓN ORIGINAL EN PANTALLA ---
-      // Devolvemos los colores del gráfico a su estado original para que el usuario no note cambios visuales
       if (chartInstance.options.scales?.x?.ticks) chartInstance.options.scales.x.ticks.color = originalXColor;
       if (chartInstance.options.scales?.y?.ticks) chartInstance.options.scales.y.ticks.color = originalYColor;
       if (chartInstance.options.plugins?.legend?.labels) chartInstance.options.plugins.legend.labels.color = originalLegendColor;
@@ -531,53 +532,135 @@ const exportChart = async (format) => {
       if (chartInstance.options.scales?.y?.grid) chartInstance.options.scales.y.grid.color = originalGridYColor;
       
       chartInstance.update('none'); 
-      // ----------------------------------------------------------------------------------
 
-      // Procesar y transformar el logo de Enervida de forma asíncrona
+      // Cargar logo principal
       let logoDataUrl = null;
       try {
-        logoDataUrl = await loadLogoToPngBase64('/logo-dark.webp');
+        const logoPath = `${import.meta.env.BASE_URL}logo-dark.webp`.replace(/\/+/g, '/');
+        logoDataUrl = await loadLogoToPngBase64(logoPath);
       } catch (e) {
-        console.warn("No se pudo procesar el logotipo, el PDF continuará con cabecera de texto.", e);
+        console.warn("No se pudo procesar el logotipo", e);
       }
 
-      // Estructurar las columnas del membrete
-      const headerColumns = [];
-      if (logoDataUrl) {
-        headerColumns.push({ image: logoDataUrl, width: 130, alignment: 'left' });
-      } else {
-        headerColumns.push({ text: 'ENERVIDA', fontSize: 16, bold: true, color: '#2C3E50', alignment: 'left' });
-      }
+      // Cargar íconos corporativos y de redes sociales en paralelo
+      const [iconLoc, iconPhone, iconWeb, iconRecycle, iconEmail, iconFb, iconTikTok, iconIn, iconYT, iconWsp] = await Promise.all([
+        svgToPngBase64('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E67E22" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>'),
+        svgToPngBase64('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E67E22" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>'),
+        svgToPngBase64('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E67E22" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>'),
+        svgToPngBase64('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7F8C8D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 10 12 5 17 10"/><line x1="12" y1="5" x2="12" y2="22"/></svg>'), // Simulación icono reciclaje / o usa tu SVG de reciclaje
+        svgToPngBase64('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#E67E22"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-5h2v5h-2zm0-7v-2h2v2h-2z"/></svg>'),
+        svgToPngBase64('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#E67E22"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>'),
+        svgToPngBase64('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#E67E22"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>'),
+        svgToPngBase64('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#E67E22"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>'),
+        svgToPngBase64('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#E67E22"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="#fff"/></svg>'),
+        svgToPngBase64('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#E67E22"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>')
+      ]);
 
-      headerColumns.push({
-        width: '*',
-        stack: [
-          { text: 'REPORTE ESTADÍSTICO', style: 'pdfTitle' },
-          { text: originalTitle.toUpperCase(), style: 'pdfSubtitle' },
-          { 
-            text: `Generado el: ${new Date().toLocaleDateString('es-BO', { year: 'numeric', month: 'long', day: 'numeric' })}`, 
-            style: 'pdfDate' 
-          }
+      // Estructura de cabecera idéntica a tu imagen de referencia
+      const contactInfo = [
+        { text: 'Oficina Central y Centro Demostrativo:', bold: true, fontSize: 8, color: '#2C3E50' },
+        { text: 'Calle Condorini, N° 118, zona Anari, Marquirivi\nGAMEP Achocalla, La Paz, Bolivia', fontSize: 8, color: '#2C3E50', margin: [0, 1, 0, 4] },
+        { 
+          columns: [
+            ...(iconPhone ? [{ image: iconPhone, width: 10, height: 10, margin: [0, 1, 3, 0] }] : []),
+            { text: '+591 732 36591  |  boris.ardaya@enervida.info', fontSize: 8, color: '#2C3E50' }
+          ],
+          columnGap: 4
+        },
+        { 
+          columns: [
+            ...(iconWeb ? [{ image: iconWeb, width: 10, height: 10, margin: [0, 1, 3, 0] }] : []),
+            { text: 'www.enervida.info', fontSize: 8, color: '#2C3E50' }
+          ],
+          columnGap: 4,
+          margin: [0, 2, 0, 0]
+        }
+      ];
+
+      const headerConfig = {
+        columns: [
+          {
+            columns: [
+              ...(iconLoc ? [{ image: iconLoc, width: 11, height: 11, margin: [0, 1, 4, 0] }] : []),
+              { stack: contactInfo }
+            ],
+            width: '65%',
+            alignment: 'left'
+          },
+          ...(logoDataUrl ? [{ image: logoDataUrl, width: 150, alignment: 'right', margin: [0, 5, 0, 0] }] : [])
         ],
-        alignment: 'right',
-        margin: [0, logoDataUrl ? 10 : 0, 0, 0] // Sincronización y centrado vertical con el logo
-      });
+        margin: [40, 30, 40, 0]
+      };
 
-      // Definición completa de la estructura de pdfMake
+      const dividerLine = {
+        canvas: [{ type: 'line', x1: 0, y1: 0, x2: usableWidth, y2: 0, lineWidth: 1.5, lineColor: '#E67E22' }],
+        margin: [40, 8, 40, 20]
+      };
+
+      // Barra de redes sociales para el pie de página
+      const socialIconsRow = [
+        ...(iconEmail ? [{ image: iconEmail, width: 16, height: 16, link: 'mailto:boris.ardaya@enervida.info' }] : []),
+        { text: '|', color: '#E67E22', fontSize: 12, margin: [2, 1, 2, 0] },
+        ...(iconWeb ? [{ image: iconWeb, width: 16, height: 16, link: 'https://www.enervida.info' }] : []),
+        { text: '|', color: '#E67E22', fontSize: 12, margin: [2, 1, 2, 0] },
+        ...(iconFb ? [{ image: iconFb, width: 16, height: 16, link: 'http://www.facebook.com/Enervida.bo' }] : []),
+        { text: '|', color: '#E67E22', fontSize: 12, margin: [2, 1, 2, 0] },
+        ...(iconTikTok ? [{ image: iconTikTok, width: 16, height: 16, link: 'https://www.tiktok.com/@enervida.bo' }] : []),
+        { text: '|', color: '#E67E22', fontSize: 12, margin: [2, 1, 2, 0] },
+        ...(iconIn ? [{ image: iconIn, width: 16, height: 16, link: 'http://www.linkedin.com/in/enervida-73236591' }] : []),
+        { text: '|', color: '#E67E22', fontSize: 12, margin: [2, 1, 2, 0] },
+        ...(iconYT ? [{ image: iconYT, width: 16, height: 16, link: 'http://www.youtube.com/channel/UC1Otrq7UZlZrxEpRuQgz9Cg' }] : []),
+        { text: '|', color: '#E67E22', fontSize: 12, margin: [2, 1, 2, 0] },
+        ...(iconWsp ? [{ image: iconWsp, width: 16, height: 16, link: 'https://api.whatsapp.com/send?phone=59173236591&text=Hola!%20Estoy%20interesado%20en%20coordinar%20con%20ENERVIDA!' }] : [])
+      ];
+
+      const footerConfig = (currentPage, pageCount) => {
+        return {
+          stack: [
+            {
+              canvas: [{ type: 'line', x1: 0, y1: 0, x2: usableWidth, y2: 0, lineWidth: 1.5, lineColor: '#E67E22' }],
+              margin: [40, 0, 40, 8]
+            },
+            {
+              columns: [
+                {
+                  columns: [
+                    ...(iconRecycle ? [{ image: iconRecycle, width: 12, height: 12, margin: [0, 0, 4, 0] }] : []),
+                    { text: 'Utilizamos papel de reciclaje para contribuir a la ODS 13 – Acción por el clima.', fontSize: 8.5, color: '#2C3E50' }
+                  ],
+                  width: '*',
+                  alignment: 'left'
+                },
+                {
+                  text: `Página | ${currentPage}`,
+                  alignment: 'right',
+                  fontSize: 9,
+                  bold: true,
+                  color: '#2C3E50',
+                  width: 'auto'
+                }
+              ],
+              margin: [40, 0, 40, 6]
+            },
+            {
+              columns: socialIconsRow,
+              columnGap: 8,
+              alignment: 'center',
+              margin: [40, 0, 40, 15]
+            }
+          ]
+        };
+      };
+
       const docDefinition = {
         pageSize: 'A4',
         pageOrientation: 'landscape',
-        pageMargins: [40, 45, 40, 45],
+        pageMargins: [40, 105, 40, 85], // Espacios generosos para que el contenido no se encime con el header/footer
+        header: headerConfig,
         content: [
-          // Sección de Membrete
-          { columns: headerColumns },
-          // Línea divisoria elegante
-          {
-            canvas: [{ type: 'line', x1: 0, y1: 12, x2: 762, y2: 12, lineWidth: 1.5, lineColor: '#2C3E50' }]
-          },
-          { text: '', margin: [0, 0, 0, 25] }, // Espaciado cómodo
-
-          // El contenedor de la imagen del gráfico estadístico (Ahora 100% visible)
+          dividerLine,
+          { text: 'REPORTE ESTADÍSTICO', style: 'pdfTitle', alignment: 'center' },
+          { text: originalTitle.toUpperCase(), style: 'pdfSubtitle', alignment: 'center', margin: [0, 4, 0, 20] },
           {
             image: base64Image,
             width: 680, 
@@ -585,25 +668,15 @@ const exportChart = async (format) => {
           }
         ],
         styles: {
-          pdfTitle: { fontSize: 16, bold: true, color: '#2C3E50' },
-          pdfSubtitle: { fontSize: 11, bold: true, color: '#2980B9', margin: [0, 2, 0, 2] },
-          pdfDate: { fontSize: 8.5, italics: true, color: '#7F8C8D' }
+          pdfTitle: { fontSize: 15, bold: true, color: '#2C3E50' },
+          pdfSubtitle: { fontSize: 11, bold: true, color: '#E67E22' }
         },
-        footer: (currentPage, pageCount) => {
-          return {
-            columns: [
-              { text: 'Generado por el Sistema de Administración LMS', alignment: 'left', fontSize: 8, color: '#95A5A6' },
-              { text: `Página ${currentPage} de ${pageCount}`, alignment: 'right', fontSize: 8, color: '#95A5A6' }
-            ],
-            margin: [40, 0, 40, 0]
-          };
-        }
+        footer: footerConfig
       };
 
       downloadAction = () => pdfMake.createPdf(docDefinition).download(`${titleSlug}_report_${Date.now()}.pdf`);
     }
 
-    // Cambiar estado visual de carga a éxito e iniciar la descarga
     exportStatus.value[format] = 'success';
     setTimeout(async () => {
       if (downloadAction) await downloadAction();
@@ -617,7 +690,6 @@ const exportChart = async (format) => {
     exportStatus.value[format] = 'idle';
   }
 };
-
 const stats = ref({})
 const topCourses = ref([])
 const usersByMonth = ref([])
@@ -638,21 +710,62 @@ const updateTime = () => {
 
 const formatMoney = (val) => `${Number(val || 0).toLocaleString('es-BO', { minimumFractionDigits: 2 })} Bs`
 
+const normalizeReportCollection = (data) => {
+  if (Array.isArray(data)) return data
+  if (!data || typeof data !== 'object') return []
+  if (Array.isArray(data.data)) return data.data
+  if (Array.isArray(data.items)) return data.items
+  if (Array.isArray(data.results)) return data.results
+  return []
+}
+
+const safeArray = (value) => Array.isArray(value) ? value : []
+
+const authStore = useAuthStore()
+
 const fetchData = async () => {
   loading.value = true
   try {
-    const [dashRes, coursesRes, usersRes, catRes, evalRes] = await Promise.all([
-      api.get('/reportes/dashboard'),
-      api.get('/reportes/inscripciones-por-curso'),
-      api.get('/reportes/usuarios-por-mes'),
-      api.get('/reportes/cursos-por-categoria'),
-      api.get('/reportes/evaluaciones-resultados')
-    ])
-    stats.value = dashRes.data
-    topCourses.value = coursesRes.data
-    usersByMonth.value = usersRes.data
-    coursesByCategory.value = catRes.data
-    evaluationResults.value = evalRes.data
+    const canDashboard = authStore.canAccess('DASHBOARD')
+    const canReportes = authStore.canAccess('REPORTES')
+    const requests = []
+
+    if (canDashboard) {
+      requests.push(api.get('/reportes/dashboard'))
+    }
+
+    if (canReportes) {
+      requests.push(api.get('/reportes/inscripciones-por-curso'))
+      requests.push(api.get('/reportes/usuarios-por-mes'))
+      requests.push(api.get('/reportes/cursos-por-categoria'))
+      requests.push(api.get('/reportes/evaluaciones-resultados'))
+    }
+
+    const results = await Promise.all(requests.map((req) => req.catch((err) => err)))
+
+    let index = 0
+    if (canDashboard) {
+      const dashRes = results[index++] || null
+      stats.value = dashRes instanceof Error ? {} : dashRes.data
+    } else {
+      stats.value = {}
+    }
+
+    if (canReportes) {
+      const coursesRes = results[index++] || null
+      const usersRes = results[index++] || null
+      const catRes = results[index++] || null
+      const evalRes = results[index++] || null
+      topCourses.value = coursesRes instanceof Error ? [] : coursesRes.data
+      usersByMonth.value = usersRes instanceof Error ? [] : usersRes.data
+      coursesByCategory.value = catRes instanceof Error ? [] : catRes.data
+      evaluationResults.value = evalRes instanceof Error ? null : evalRes.data
+    } else {
+      topCourses.value = []
+      usersByMonth.value = []
+      coursesByCategory.value = []
+      evaluationResults.value = null
+    }
   } catch (e) {
     console.error('Dashboard error:', e)
   } finally {
@@ -696,18 +809,16 @@ const metricCards = computed(() => [
 // Main Bar Chart
 const barChartData = computed(() => {
   if (!stats.value.trend) return null
+  const labels = stats.value.trend.map(t => t.month)
+  const data = stats.value.trend.map(t => t.count)
+  const backgrounds = data.map((_, i) => chartColors[i % chartColors.length])
   return {
-    labels: stats.value.trend.map(t => t.month),
+    labels,
     datasets: [{
       label: 'Inscripciones',
-      data: stats.value.trend.map(t => t.count),
-      backgroundColor: (ctx) => {
-        const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 280)
-        g.addColorStop(0, 'rgba(34, 211, 238, 1)')
-        g.addColorStop(1, 'rgba(34, 211, 238, 0.6)')
-        return g
-      },
-      borderColor: '#22d3ee',
+      data,
+      backgroundColor: backgrounds,
+      borderColor: backgrounds.map(c => c),
       borderWidth: 0,
       borderRadius: 12,
       borderSkipped: false,
@@ -747,16 +858,16 @@ const tooltipCallbacks = {
   }
 }
 
-const barChartOptions = {
+const barChartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
     legend: { display: false },
     tooltip: {
-      backgroundColor: 'rgba(15,23,42,0.95)',
-      titleColor: '#22d3ee',
-      bodyColor: '#e2e8f0',
-      borderColor: 'rgba(34,211,238,0.3)',
+      backgroundColor: palette.value.tooltipBg,
+      titleColor: palette.value.tooltipTitle,
+      bodyColor: palette.value.tooltipBody,
+      borderColor: palette.value.ticks,
       borderWidth: 1,
       cornerRadius: 12,
       padding: 14,
@@ -771,30 +882,30 @@ const barChartOptions = {
   scales: {
     x: {
       grid: { display: false },
-      ticks: { color: 'rgba(255,255,255,0.35)', font: { size: 11, weight: 'bold' } }
+      ticks: { color: palette.value.ticks, font: { size: 11, weight: 'bold' } }
     },
     y: {
-      grid: { color: 'rgba(255,255,255,0.04)', drawBorder: false },
-      ticks: { color: 'rgba(255,255,255,0.35)', font: { size: 11 }, stepSize: 1 },
+      grid: { color: palette.value.grid, drawBorder: false },
+      ticks: { color: palette.value.ticks, font: { size: 11 }, stepSize: 1 },
       beginAtZero: true
     }
   }
-}
+}))
 
-const barChartExpandedOptions = {
+const barChartExpandedOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
     legend: { 
-      display: true, 
+      display: true,
       position: 'top',
-      labels: { color: 'rgba(255,255,255,0.8)', font: { size: 14, weight: 'bold' }, padding: 20 }
+      labels: { color: palette.value.ticksStrong, font: { size: 14, weight: 'bold' }, padding: 20 }
     },
     tooltip: {
-      backgroundColor: 'rgba(15,23,42,0.95)',
-      titleColor: '#22d3ee',
-      bodyColor: '#e2e8f0',
-      borderColor: 'rgba(34,211,238,0.3)',
+      backgroundColor: palette.value.tooltipBg,
+      titleColor: palette.value.tooltipTitle,
+      bodyColor: palette.value.tooltipBody,
+      borderColor: palette.value.ticks,
       borderWidth: 1,
       cornerRadius: 12,
       padding: 16,
@@ -809,15 +920,77 @@ const barChartExpandedOptions = {
   scales: {
     x: {
       grid: { display: false },
-      ticks: { color: 'rgba(255,255,255,0.8)', font: { size: 13, weight: 'bold' } }
+      ticks: { color: palette.value.ticksStrong, font: { size: 13, weight: 'bold' } }
     },
     y: {
-      grid: { color: 'rgba(255,255,255,0.1)', drawBorder: false },
-      ticks: { color: 'rgba(255,255,255,0.8)', font: { size: 13 }, stepSize: 1 },
+      grid: { color: palette.value.gridStrong, drawBorder: false },
+      ticks: { color: palette.value.ticksStrong, font: { size: 13 }, stepSize: 1 },
       beginAtZero: true
     }
   }
+}))
+
+// Theme detection and palette (light/dark)
+const isDark = ref(true)
+const detectTheme = () => {
+  const html = document.documentElement
+  if (html.classList.contains('dark')) return true
+  if (html.classList.contains('light')) return false
+  const dt = html.getAttribute('data-theme')
+  if (dt === 'dark') return true
+  if (dt === 'light') return false
+  // fallback: assume dark if background is very dark
+  const bg = getComputedStyle(document.body).backgroundColor
+  const m = bg.match(/\d+/g)
+  if (m) {
+    const [r, g, b] = m.slice(0, 3).map(Number)
+    const l = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+    return l < 0.5
+  }
+  return true
 }
+
+const palette = computed(() => {
+  if (isDark.value) {
+    return {
+      ticks: 'rgba(255,255,255,0.35)',
+      ticksStrong: 'rgba(255,255,255,0.8)',
+      grid: 'rgba(255,255,255,0.04)',
+      gridStrong: 'rgba(255,255,255,0.1)',
+      tooltipBg: 'rgba(15,23,42,0.95)',
+      tooltipTitle: '#22d3ee',
+      tooltipBody: '#e2e8f0',
+      border: 'rgba(15,23,42,0.8)',
+      legend: 'rgba(255,255,255,0.5)'
+    }
+  }
+  return {
+    ticks: 'rgba(17,24,39,0.75)',
+    ticksStrong: 'rgba(17,24,39,0.95)',
+    grid: 'rgba(15,23,42,0.04)',
+    gridStrong: 'rgba(15,23,42,0.1)',
+    tooltipBg: '#ffffff',
+    tooltipTitle: '#0f172a',
+    tooltipBody: '#0f172a',
+    border: '#ffffff',
+    legend: 'rgba(17,24,39,0.65)'
+  }
+})
+
+let themeObserver = null
+
+onMounted(() => {
+  // existing onMounted code will run after this block; ensure we set initial theme
+  isDark.value = detectTheme()
+  themeObserver = new MutationObserver(() => {
+    isDark.value = detectTheme()
+  })
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme', 'style'] })
+})
+
+onUnmounted(() => {
+  if (themeObserver) themeObserver.disconnect()
+})
 
 // Doughnut Chart
 const chartColors = ['#22d3ee', '#a78bfa', '#34d399', '#fbbf24', '#f87171']
@@ -854,20 +1027,20 @@ const doughnutChartDataExpanded = computed(() => {
   }
 })
 
-const doughnutOptions = {
+const doughnutOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
   cutout: '65%',
   plugins: {
     legend: {
       position: 'bottom',
-      labels: { color: 'rgba(255,255,255,0.5)', font: { size: 10, weight: 'bold' }, padding: 14, usePointStyle: true, pointStyleWidth: 8 }
+      labels: { color: palette.value.legend, font: { size: 10, weight: 'bold' }, padding: 14, usePointStyle: true, pointStyleWidth: 8 }
     },
     tooltip: {
-      backgroundColor: 'rgba(15,23,42,0.95)',
-      titleColor: '#a78bfa',
-      bodyColor: '#e2e8f0',
-      borderColor: 'rgba(167,139,250,0.3)',
+      backgroundColor: palette.value.tooltipBg,
+      titleColor: palette.value.tooltipTitle,
+      bodyColor: palette.value.tooltipBody,
+      borderColor: palette.value.ticks,
       borderWidth: 1,
       cornerRadius: 12,
       padding: 16,
@@ -879,20 +1052,20 @@ const doughnutOptions = {
       callbacks: tooltipCallbacks
     }
   }
-}
+}))
 
-const doughnutExpandedOptions = {
+const doughnutExpandedOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
   cutout: '50%',
   plugins: {
     legend: {
       position: 'right',
-      labels: { color: 'rgba(255,255,255,0.8)', font: { size: 14, weight: 'bold' }, padding: 24, usePointStyle: true, pointStyleWidth: 12 }
+      labels: { color: palette.value.ticksStrong, font: { size: 14, weight: 'bold' }, padding: 24, usePointStyle: true, pointStyleWidth: 12 }
     },
-    tooltip: barChartExpandedOptions.plugins.tooltip
+    tooltip: barChartExpandedOptions.value.plugins.tooltip
   }
-}
+}))
 
 // Users Line Chart
 const usersChartData = computed(() => {
@@ -915,37 +1088,42 @@ const usersChartData = computed(() => {
   }
 })
 
-const lineOptions = {
+const lineOptions = computed(() => ({
   responsive: true, maintainAspectRatio: false,
-  plugins: { legend: { display: false }, tooltip: barChartOptions.plugins.tooltip },
+  plugins: { legend: { display: false }, tooltip: barChartOptions.value.plugins.tooltip },
   scales: {
-    x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.3)', font: { size: 10 } } },
-    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'rgba(255,255,255,0.3)', font: { size: 10 }, stepSize: 1 }, beginAtZero: true }
+    x: { grid: { display: false }, ticks: { color: palette.value.ticks, font: { size: 10 } } },
+    y: { grid: { color: palette.value.grid }, ticks: { color: palette.value.ticks, font: { size: 10 }, stepSize: 1 }, beginAtZero: true }
   }
-}
+}))
 
-const lineExpandedOptions = {
+const lineExpandedOptions = computed(() => ({
   responsive: true, maintainAspectRatio: false,
   plugins: { 
-    legend: { display: true, position: 'top', labels: { color: 'rgba(255,255,255,0.8)', font: { size: 14, weight: 'bold' } } }, 
-    tooltip: barChartExpandedOptions.plugins.tooltip 
+    legend: { display: true, position: 'top', labels: { color: palette.value.ticksStrong, font: { size: 14, weight: 'bold' } } }, 
+    tooltip: barChartExpandedOptions.value.plugins.tooltip 
   },
   scales: {
-    x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.8)', font: { size: 13, weight: 'bold' } } },
-    y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.8)', font: { size: 13 }, stepSize: 1 }, beginAtZero: true }
+    x: { grid: { display: false }, ticks: { color: palette.value.ticksStrong, font: { size: 13, weight: 'bold' } } },
+    y: { grid: { color: palette.value.gridStrong }, ticks: { color: palette.value.ticksStrong, font: { size: 13 }, stepSize: 1 }, beginAtZero: true }
   }
-}
+}))
 
 // Category Horizontal Bar Chart
 const categoryChartData = computed(() => {
-  if (!coursesByCategory.value.length) return null
+  const categories = safeArray(coursesByCategory.value)
+  if (!categories.length) return null
   return {
-    labels: coursesByCategory.value.map(c => c.nombre.length > 12 ? c.nombre.slice(0, 12) + '…' : c.nombre),
+    labels: categories.map(c => {
+      const name = c.nombre || ''
+      return name.length > 12 ? name.slice(0, 12) + '…' : name
+    }),
     datasets: [{
       label: 'Cursos',
-      fullLabels: coursesByCategory.value.map(c => c.nombre),
-      data: coursesByCategory.value.map(c => c.count ?? c._count?.cursos ?? 0),
-      backgroundColor: '#fbbf24',
+      fullLabels: categories.map(c => c.nombre || ''),
+      data: categories.map(c => Number(c.count ?? c._count?.cursos ?? 0)),
+      backgroundColor: categories.map((_, index) => chartColors[index % chartColors.length]),
+      borderColor: categories.map((_, index) => chartColors[index % chartColors.length]),
       borderRadius: 4,
       barPercentage: 0.6
     }]
@@ -953,42 +1131,44 @@ const categoryChartData = computed(() => {
 })
 
 const categoryChartDataExpanded = computed(() => {
-  if (!coursesByCategory.value.length) return null
+  const categories = safeArray(coursesByCategory.value)
+  if (!categories.length) return null
   return {
-    labels: coursesByCategory.value.map(c => c.nombre), // Texto completo
+    labels: categories.map(c => c.nombre || ''), // Texto completo
     datasets: [{
       label: 'Cursos',
-      fullLabels: coursesByCategory.value.map(c => c.nombre),
-      data: coursesByCategory.value.map(c => c.count ?? c._count?.cursos ?? 0),
-      backgroundColor: '#fbbf24',
+      fullLabels: categories.map(c => c.nombre || ''),
+      data: categories.map(c => Number(c.count ?? c._count?.cursos ?? 0)),
+      backgroundColor: categories.map((_, index) => chartColors[index % chartColors.length]),
+      borderColor: categories.map((_, index) => chartColors[index % chartColors.length]),
       borderRadius: 6,
       barPercentage: 0.7
     }]
   }
 })
 
-const horizontalBarOptions = {
+const horizontalBarOptions = computed(() => ({
   indexAxis: 'y',
   responsive: true, maintainAspectRatio: false,
-  plugins: { legend: { display: false }, tooltip: barChartOptions.plugins.tooltip },
+  plugins: { legend: { display: false }, tooltip: barChartOptions.value.plugins.tooltip },
   scales: {
-    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'rgba(255,255,255,0.3)', font: { size: 10 }, stepSize: 1 }, beginAtZero: true },
-    y: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.5)', font: { size: 10 } } }
+    x: { grid: { color: palette.value.grid }, ticks: { color: palette.value.ticks, font: { size: 10 }, stepSize: 1 }, beginAtZero: true },
+    y: { grid: { display: false }, ticks: { color: palette.value.legend, font: { size: 10 } } }
   }
-}
+}))
 
-const horizontalBarExpandedOptions = {
+const horizontalBarExpandedOptions = computed(() => ({
   indexAxis: 'y',
   responsive: true, maintainAspectRatio: false,
   plugins: { 
-    legend: { display: true, position: 'top', labels: { color: 'rgba(255,255,255,0.8)', font: { size: 14, weight: 'bold' } } }, 
-    tooltip: barChartExpandedOptions.plugins.tooltip 
+    legend: { display: true, position: 'top', labels: { color: palette.value.ticksStrong, font: { size: 14, weight: 'bold' } } }, 
+    tooltip: barChartExpandedOptions.value.plugins.tooltip 
   },
   scales: {
-    x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.8)', font: { size: 13 }, stepSize: 1 }, beginAtZero: true },
-    y: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.8)', font: { size: 14, weight: 'bold' } } }
+    x: { grid: { color: palette.value.gridStrong }, ticks: { color: palette.value.ticksStrong, font: { size: 13 }, stepSize: 1 }, beginAtZero: true },
+    y: { grid: { display: false }, ticks: { color: palette.value.ticksStrong, font: { size: 14, weight: 'bold' } } }
   }
-}
+}))
 
 // Eval Results Doughnut
 const evalChartData = computed(() => {
@@ -1005,21 +1185,21 @@ const evalChartData = computed(() => {
   }
 })
 
-const evalDoughnutOptions = {
+const evalDoughnutOptions = computed(() => ({
   responsive: true, maintainAspectRatio: false, cutout: '70%',
   plugins: {
-    legend: { position: 'bottom', labels: { color: 'rgba(255,255,255,0.5)', font: { size: 10 }, usePointStyle: true, padding: 10 } },
-    tooltip: barChartOptions.plugins.tooltip
+    legend: { position: 'bottom', labels: { color: palette.value.legend, font: { size: 10 }, usePointStyle: true, padding: 10 } },
+    tooltip: barChartOptions.value.plugins.tooltip
   }
-}
+}))
 
-const evalDoughnutExpandedOptions = {
+const evalDoughnutExpandedOptions = computed(() => ({
   responsive: true, maintainAspectRatio: false, cutout: '60%',
   plugins: {
-    legend: { position: 'right', labels: { color: 'rgba(255,255,255,0.8)', font: { size: 14, weight: 'bold' }, usePointStyle: true, padding: 24 } },
-    tooltip: barChartExpandedOptions.plugins.tooltip
+    legend: { position: 'right', labels: { color: palette.value.ticksStrong, font: { size: 14, weight: 'bold' }, usePointStyle: true, padding: 24 } },
+    tooltip: barChartExpandedOptions.value.plugins.tooltip
   }
-}
+}))
 
 // System Status
 const systemStatus = computed(() => [

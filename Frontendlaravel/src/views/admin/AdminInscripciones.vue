@@ -63,16 +63,37 @@
                 <option value="COMPLETADO" class="bg-surface-container text-on-surface">Completado</option>
               </select>
             </div>
-          </div>
 
-          <div class="flex justify-end gap-3 pt-2">
-            <button type="button" @click="showForm = false" class="btn-premium glass-card justify-center !py-3.5 !px-6">Cancelar</button>
-            <button type="submit" :disabled="saving" class="btn-premium btn-primary-neon justify-center !py-3.5 !px-8 gap-2">
-              <span v-if="saving" class="animate-spin material-symbols-outlined text-sm">refresh</span>
-              {{ isEditing ? 'Actualizar' : 'Inscribir Estudiante' }}
-            </button>
-          </div>
-        </form>
+              <div class="space-y-2">
+                <label class="text-[11px] font-black uppercase tracking-widest text-on-surface/40 ml-1">Estado de Pago</label>
+                <select v-model="form.estado_pago" class="input-cyber w-full appearance-none cursor-pointer !text-on-surface !bg-on-surface/[0.04] !border-none">
+                  <option value="PENDIENTE" class="bg-surface-container text-on-surface">Pendiente</option>
+                  <option value="EN_REVISION" class="bg-surface-container text-on-surface">En revisión</option>
+                  <option value="APROBADO" class="bg-surface-container text-on-surface">Aprobado</option>
+                  <option value="RECHAZADO" class="bg-surface-container text-on-surface">Rechazado</option>
+                </select>
+              </div>
+
+              <div class="space-y-2">
+                <label class="text-[11px] font-black uppercase tracking-widest text-on-surface/40 ml-1">Método de Pago</label>
+                <select v-model="form.metodo_pago" class="input-cyber w-full appearance-none cursor-pointer !text-on-surface !bg-on-surface/[0.04] !border-none">
+                  <option value="">Seleccione método</option>
+                  <option value="QR">QR</option>
+                  <option value="TRANSFERENCIA">Transferencia</option>
+                  <option value="DEPOSITO">Depósito</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="mt-8 flex flex-col sm:flex-row justify-end gap-3">
+              <button type="button" @click="toggleForm" class="w-full sm:w-auto px-6 py-3.5 rounded-xl text-[11px] font-black uppercase tracking-widest text-on-surface/40 hover:text-on-surface/80 hover:bg-on-surface/5 transition-all duration-300">
+                Cancelar
+              </button>
+              <button type="submit" :disabled="saving" class="w-full sm:w-auto min-w-[200px] px-6 py-3.5 rounded-xl bg-accent-neon text-background text-[11px] font-black uppercase tracking-widest shadow-[0_8px_30px_rgba(0,242,254,0.15)] hover:shadow-[0_12px_40px_rgba(0,242,254,0.3)] hover:-translate-y-0.5 active:scale-95 transition-all duration-300 disabled:opacity-50">
+                {{ saving ? 'Guardando...' : 'Guardar Inscripción' }}
+              </button>
+            </div>
+          </form>
       </div>
     </transition>
 
@@ -114,7 +135,8 @@
               <th class="p-6 text-[10px] font-black text-on-surface/40 uppercase tracking-widest">Estudiante</th>
               <th class="p-6 text-[10px] font-black text-on-surface/40 uppercase tracking-widest">Curso</th>
               <th class="p-6 text-[10px] font-black text-on-surface/40 uppercase tracking-widest">Progreso</th>
-              <th class="p-6 text-[10px] font-black text-on-surface/40 uppercase tracking-widest text-center">Estado</th>
+              <th class="p-6 text-[10px] font-black text-on-surface/40 uppercase tracking-widest">Pago</th>
+            <th class="p-6 text-[10px] font-black text-on-surface/40 uppercase tracking-widest text-center">Estado</th>
               <th class="p-6 text-[10px] font-black text-on-surface/40 uppercase tracking-widest text-right">Acciones</th>
             </tr>
           </thead>
@@ -143,6 +165,10 @@
                   <span class="text-[10px] font-black text-on-surface/60">{{ item.porcentaje_progreso }}%</span>
                 </div>
               </td>
+              <td class="p-6">
+                <div class="text-[10px] font-black uppercase tracking-widest text-on-surface/40">{{ item.estado_pago || 'PENDIENTE' }}</div>
+                <div class="text-sm font-bold text-on-surface mt-2">{{ item.metodo_pago || '—' }}</div>
+              </td>
               <td class="p-6 text-center">
                 <span :class="['px-3 py-1 text-[9px] font-black rounded-full uppercase tracking-widest', getStatusClass(item.estado)]">
                   {{ item.estado }}
@@ -150,6 +176,9 @@
               </td>
               <td class="p-6 text-right">
                 <div class="flex justify-end gap-2">
+                  <button v-if="item.comprobante_pago_url" @click="openComprobanteModal(item.comprobante_pago_url)" class="w-10 h-10 rounded-xl bg-slate-500/10 flex items-center justify-center text-slate-500 hover:bg-slate-600 hover:text-white hover:-translate-y-1 transition-all duration-300" title="Ver comprobante">
+                    <span class="material-symbols-outlined text-xl">visibility</span>
+                  </button>
                   <button @click="editInscripcion(item)" class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 hover:bg-blue-600 hover:text-white hover:-translate-y-1 transition-all duration-300" title="Editar">
                     <span class="material-symbols-outlined text-xl">edit</span>
                   </button>
@@ -160,7 +189,7 @@
               </td>
             </tr>
             <tr v-if="filteredInscripciones.length === 0 && !loading">
-              <td colspan="5" class="p-20 text-center">
+              <td colspan="6" class="p-20 text-center">
                 <div class="flex flex-col items-center gap-4 text-on-surface/20">
                   <span class="material-symbols-outlined text-6xl">person_off</span>
                   <p class="text-sm font-black uppercase tracking-widest">No se encontraron inscripciones</p>
@@ -177,6 +206,31 @@
         </table>
       </div>
     </div>
+
+    <teleport to="body">
+      <transition name="fade">
+        <div v-if="selectedComprobanteUrl" class="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-4 sm:p-6" @click="selectedComprobanteUrl = null">
+          <div class="glass-card-premium relative max-w-xl w-full max-h-[88vh] bg-white dark:bg-surface border border-gray-200 dark:border-white/10 p-5 sm:p-6 rounded-3xl flex flex-col gap-4 shadow-2xl overflow-hidden" @click.stop>
+            <div class="flex items-center justify-between border-b border-gray-200 dark:border-white/10 pb-3">
+              <div>
+                <h3 class="text-sm font-black tracking-tight text-gray-900 dark:text-white">Comprobante de Pago</h3>
+                <p class="text-[10px] font-medium text-gray-500 dark:text-white/50">Verifica el documento registrado</p>
+              </div>
+              <button type="button" @click="selectedComprobanteUrl = null" class="p-1.5 rounded-xl text-gray-400 hover:text-gray-800 hover:bg-gray-100 transition-colors">
+                <span class="material-symbols-outlined text-xl">close</span>
+              </button>
+            </div>
+            <div class="flex-1 min-h-[300px] max-h-[58vh] flex items-center justify-center overflow-auto rounded-2xl bg-gray-100 dark:bg-black/40 border border-gray-200 dark:border-white/10 p-3 sm:p-4">
+              <iframe v-if="selectedComprobanteUrl.toLowerCase().endsWith('.pdf')" :src="selectedComprobanteUrl" class="w-full h-[450px] rounded-xl border-0"></iframe>
+              <img v-else :src="selectedComprobanteUrl" alt="Comprobante de pago" class="max-w-full max-h-[50vh] object-contain rounded-xl" />
+            </div>
+            <div class="flex justify-end pt-2 border-t border-gray-200 dark:border-white/10">
+              <button type="button" @click="selectedComprobanteUrl = null" class="px-6 py-2.5 rounded-xl bg-accent-neon text-background text-xs font-black uppercase tracking-widest shadow-md">Cerrar</button>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </teleport>
   </div>
 </template>
 
@@ -197,12 +251,18 @@ const showForm = ref(false)
 const isEditing = ref(false)
 const searchQuery = ref('')
 const filterStatus = ref('ALL')
+const selectedComprobanteUrl = ref(null)
 
 const form = ref({
   id: null,
   usuario_id: '',
   curso_id: '',
-  estado: 'ACTIVO'
+  estado: 'ACTIVO',
+  estado_pago: 'PENDIENTE',
+  monto_pago: 0,
+  metodo_pago: '',
+  fecha_pago: null,
+  comprobante_pago_url: ''
 })
 
 const filteredInscripciones = computed(() => {
@@ -236,29 +296,67 @@ const fetchData = async () => {
   }
 }
 
+const openComprobanteModal = (url) => {
+  selectedComprobanteUrl.value = url
+}
+
 const toggleForm = () => {
   if (showForm.value) {
     showForm.value = false
   } else {
     isEditing.value = false
-    form.value = { id: null, usuario_id: '', curso_id: '', estado: 'ACTIVO' }
+    form.value = {
+      id: null,
+      usuario_id: '',
+      curso_id: '',
+      estado: 'ACTIVO',
+      estado_pago: 'PENDIENTE',
+      monto_pago: 0,
+      metodo_pago: '',
+      fecha_pago: null,
+      comprobante_pago_url: ''
+    }
     showForm.value = true
   }
 }
 
 const editInscripcion = (item) => {
   isEditing.value = true
-  form.value = { ...item }
+  form.value = {
+    id: item.id,
+    usuario_id: item.usuario_id,
+    curso_id: item.curso_id,
+    estado: item.estado || 'ACTIVO',
+    estado_pago: item.estado_pago || 'PENDIENTE',
+    monto_pago: item.monto_pago ?? 0,
+    metodo_pago: item.metodo_pago || '',
+    fecha_pago: item.fecha_pago || null,
+    comprobante_pago_url: item.comprobante_pago_url || '',
+    porcentaje_progreso: item.porcentaje_progreso ?? 0
+  }
   showForm.value = true
 }
+
+const buildFormPayload = () => ({
+  usuario_id: form.value.usuario_id ?? '',
+  curso_id: form.value.curso_id ?? '',
+  estado: form.value.estado ?? 'ACTIVO',
+  estado_pago: form.value.estado_pago ?? 'PENDIENTE',
+  monto_pago: form.value.monto_pago ?? 0,
+  metodo_pago: form.value.metodo_pago || '',
+  fecha_pago: form.value.fecha_pago || null,
+  comprobante_pago_url: form.value.comprobante_pago_url || '',
+  porcentaje_progreso: form.value.porcentaje_progreso ?? 0
+})
 
 const saveInscripcion = async () => {
   saving.value = true
   try {
+    const payload = buildFormPayload()
     if (isEditing.value) {
-      await api.patch(`/inscripciones/${form.value.id}`, { estado: form.value.estado })
+      await api.patch(`/inscripciones/${form.value.id}`, payload)
     } else {
-      await api.post('/inscripciones', form.value)
+      await api.post('/inscripciones', payload)
     }
     await fetchData()
     notificationStore.addNotification({

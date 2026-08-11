@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Usuario;
 use App\Models\TokenRecuperacion;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
@@ -201,6 +202,8 @@ class AuthController extends Controller
         $usuario->save();
 
         $token = auth('api')->login($usuario);
+        $refreshToken = $this->generateRefreshToken();
+        $this->storeRefreshToken($usuario, $refreshToken);
 
         // --- AUDITORIA ---
         \App\Services\AuditoriaService::log(
@@ -215,7 +218,7 @@ class AuthController extends Controller
         );
         \App\Services\AuditoriaService::registrarDispositivo($usuario->id, $request);
 
-        return $this->respondWithToken($token, $usuario);
+        return $this->respondWithToken($token, $usuario, $refreshToken);
     }
 
     public function googleLogin(Request $request)
@@ -342,9 +345,28 @@ class AuthController extends Controller
         }
     }
 
-    public function refresh()
+    public function refresh(Request $request)
     {
-        return $this->respondWithToken(auth('api')->refresh(), auth('api')->user());
+        $request->validate([
+            'userId' => 'required|integer|exists:usuarios,id'
+        ]);
+
+        $usuario = Usuario::findOrFail($request->userId);
+
+        if ($usuario->estado === 'BLOQUEADO') {
+            return response()->json(['error' => 'Cuenta bloqueada'], 403);
+        }
+
+        $rawRefresh = $request->cookie('refresh_token');
+        if (!$rawRefresh || !$usuario->refresh_token || !Hash::check($rawRefresh, $usuario->refresh_token)) {
+            return response()->json(['error' => 'Refresh token inválido'], 401);
+        }
+
+        $token = auth('api')->login($usuario);
+        $refreshToken = $this->generateRefreshToken();
+        $this->storeRefreshToken($usuario, $refreshToken);
+
+        return $this->respondWithToken($token, $usuario, $refreshToken);
     }
 
     public function logout()
@@ -352,6 +374,9 @@ class AuthController extends Controller
         $usuario = auth('api')->user();
 
         if ($usuario) {
+            $usuario->refresh_token = null;
+            $usuario->save();
+
             \App\Services\AuditoriaService::log(
                 $usuario->id,
                 'LOGOUT',
@@ -365,7 +390,9 @@ class AuthController extends Controller
         }
 
         auth('api')->logout();
-        return response()->json(['message' => 'Successfully logged out']);
+        // Remove HttpOnly refresh cookie
+        $forget = Cookie::forget('refresh_token');
+        return response()->json(['message' => 'Successfully logged out'])->withCookie($forget);
     }
 
     public function forgotPassword(Request $request)
@@ -475,14 +502,33 @@ class AuthController extends Controller
         return response()->json(['message' => 'Correo verificado exitosamente']);
     }
 
-    protected function respondWithToken($token, $usuario = null)
+    private function generateRefreshToken(): string
     {
+        return bin2hex(random_bytes(64));
+    }
+
+    private function storeRefreshToken(Usuario $usuario, string $refreshToken): void
+    {
+        $usuario->refresh_token = Hash::make($refreshToken);
+        $usuario->save();
+    }
+
+    protected function respondWithToken($token, $usuario = null, $refreshToken = null)
+    {
+        if ($usuario && $refreshToken === null) {
+            $refreshToken = $this->generateRefreshToken();
+            $this->storeRefreshToken($usuario, $refreshToken);
+        }
+
+        $minutes = config('jwt.refresh_ttl') ?? 20160;
+        // create HttpOnly secure cookie for refresh token
+        $cookie = cookie('refresh_token', $refreshToken, $minutes, '/', null, config('app.env') !== 'local', true, false, 'Lax');
+
         return response()->json([
             'access_token' => $token,
-            'refresh_token' => $token,
             'user' => $usuario ? $usuario->load('rol') : null,
             'expires_in' => auth('api')->factory()->getTTL() * 60
-        ]);
+        ])->withCookie($cookie);
     }
 
     /**

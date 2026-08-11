@@ -99,9 +99,9 @@ const getIcon = (type) => {
   }
 }
 
-onMounted(() => {
+/*onMounted(() => {
   console.log('NotificationToast montado en modo global')
-})
+})*/
 </script>
 
 <style scoped>

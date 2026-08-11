@@ -219,221 +219,232 @@
       </div>
     </div>
 
-    <!-- ===================== DETAIL MODAL ===================== -->
-    <div v-if="showModal && selectedIntento"
-      class="fixed inset-0 bg-background/80 backdrop-blur-xl z-[250] flex items-center justify-center p-4">
-      <div
-        class="glass-card max-w-4xl w-full max-h-[90vh] flex flex-col rounded-[32px] overflow-hidden shadow-2xl relative border border-on-surface/10 bg-background">
-        <!-- Modal Header -->
-        <div class="p-6 md:p-8 border-b border-on-surface/5 flex items-center justify-between shrink-0">
-          <div>
-            <h3 class="text-xl font-black text-on-surface font-lexend tracking-tight">
-              {{ selectedIntento.usuario?.nombres }}
-              {{ selectedIntento.usuario?.apellidos }}
-              <span class="text-accent-neon">
-                — {{ selectedIntento.evaluacion?.titulo }}</span>
-            </h3>
-            <p class="text-xs text-on-surface/40 mt-1 uppercase font-bold tracking-wider">
-              {{
-                formatDate(
-                  selectedIntento.fecha_fin || selectedIntento.fecha_inicio,
-                )
-              }}
-              · Duración:
-              {{
-                calcDuration(
-                  selectedIntento.fecha_inicio,
-                  selectedIntento.fecha_fin,
-                )
-              }}
-            </p>
-          </div>
-          <button @click="showModal = false"
-            class="w-10 h-10 rounded-xl bg-on-surface/5 flex items-center justify-center text-on-surface/40 hover:bg-red-500/10 hover:text-red-500 transition-all">
-            <span class="material-symbols-outlined">close</span>
-          </button>
-        </div>
-
-        <!-- Summary badges -->
-        <div class="px-8 py-5 border-b border-on-surface/5 grid grid-cols-2 sm:grid-cols-4 gap-4 shrink-0">
-          <div class="bg-on-surface/5 rounded-2xl p-4">
-            <p class="text-[9px] font-black text-on-surface/30 uppercase tracking-widest">
-              Nota
-            </p>
-            <p :class="[
-              'text-2xl font-black mt-1',
-              selectedIntento.aprobado ? 'text-green-500' : 'text-red-500',
-            ]">
-              {{ Math.round(selectedIntento.nota || 0) }}%
-            </p>
-          </div>
-          <div class="bg-on-surface/5 rounded-2xl p-4">
-            <p class="text-[9px] font-black text-on-surface/30 uppercase tracking-widest">
-              Aprobación mín.
-            </p>
-            <p class="text-2xl font-black text-on-surface mt-1">
-              {{
-                Math.round(selectedIntento.evaluacion?.nota_aprobacion || 0)
-              }}%
-            </p>
-          </div>
-          <div class="bg-on-surface/5 rounded-2xl p-4">
-            <p class="text-[9px] font-black text-on-surface/30 uppercase tracking-widest">
-              Estado
-            </p>
-            <span :class="[
-              'inline-block mt-2 px-3 py-1 text-[9px] font-black rounded-full uppercase tracking-widest',
-              selectedIntento.aprobado
-                ? 'bg-green-500/10 text-green-500'
-                : 'bg-red-500/10 text-red-500',
-            ]">
-              {{ selectedIntento.aprobado ? "Aprobado" : "Reprobado" }}
-            </span>
-          </div>
-          <div class="bg-on-surface/5 rounded-2xl p-4">
-            <p class="text-[9px] font-black text-on-surface/30 uppercase tracking-widest">
-              Correctas
-            </p>
-            <p class="text-2xl font-black text-accent-neon mt-1">
-              {{ correctCount }}/{{
-                selectedIntento.evaluacion?.preguntas?.length || 0
-              }}
-            </p>
-          </div>
-        </div>
-
-        <!-- Questions breakdown -->
-        <div class="flex-1 overflow-y-auto p-6 md:p-8 space-y-5 custom-scrollbar">
-          <!-- No answers stored -->
-          <div v-if="!selectedIntento.respuestas_seleccionadas"
-            class="text-center py-14 bg-yellow-500/5 rounded-2xl border border-yellow-500/10">
-            <span class="material-symbols-outlined text-yellow-500 text-4xl mb-3">warning</span>
-            <p class="text-xs font-black text-yellow-500 uppercase tracking-widest">
-              Detalle no disponible
-            </p>
-            <p class="text-xs text-on-surface/40 mt-2 max-w-md mx-auto">
-              Este intento fue realizado antes de la actualización que guarda
-              las respuestas del estudiante.
-            </p>
-          </div>
-
-          <template v-else>
-            <h4 class="text-sm font-black text-on-surface uppercase tracking-widest">
-              Desglose de preguntas
-            </h4>
-
-            <div v-for="(pregunta, qIdx) in selectedIntento.evaluacion?.preguntas" :key="pregunta.id"
-              class="p-6 rounded-[20px] bg-on-surface/5 border border-on-surface/5 space-y-4">
-              <div class="flex items-start justify-between gap-4">
-                <div class="flex-1">
-                  <span class="text-[10px] font-black text-accent-neon uppercase tracking-wider">
-                    Pregunta {{ qIdx + 1 }} ({{ pregunta.puntos }} pts)
-                  </span>
-                  <h5 class="text-sm font-bold text-on-surface mt-1 leading-relaxed">
-                    {{ pregunta.pregunta }}
-                  </h5>
-                </div>
-                <!-- Correct / Incorrect / No answer badge -->
-                <span v-if="
-                  selectedIntento.respuestas_seleccionadas[pregunta.id] ===
-                  undefined
-                "
-                  class="px-2.5 py-1 text-[9px] font-black rounded-full uppercase tracking-wider bg-on-surface/10 text-on-surface/40 shrink-0">
-                  Sin responder
-                </span>
-                <span v-else-if="
-                  isCorrect(
-                    pregunta,
-                    selectedIntento.respuestas_seleccionadas,
+    <!-- ===================== DETAIL MODAL (TELEPORTED TO BODY) ===================== -->
+    <Teleport to="body">
+      <div v-if="showModal && selectedIntento"
+        class="fixed inset-0 bg-background/90 backdrop-blur-xl z-[9999] flex items-center justify-center p-4">
+        <div
+          class="bg-surface-container max-w-4xl w-full max-h-[90vh] flex flex-col rounded-[32px] overflow-hidden shadow-2xl relative border border-white/5 bg-opacity-95">
+          
+          <!-- Modal Header -->
+          <div class="px-6 py-4 md:px-8 md:py-5 flex items-center justify-between shrink-0 bg-transparent border-b border-white/5">
+            <div>
+              <h3 class="text-lg md:text-xl font-black text-on-surface font-lexend tracking-tight">
+                {{ selectedIntento.usuario?.nombres }}
+                {{ selectedIntento.usuario?.apellidos }}
+                <span class="text-gradient-neon">
+                  — {{ selectedIntento.evaluacion?.titulo }}</span>
+              </h3>
+              <p class="text-[11px] text-on-surface/50 mt-0.5 uppercase font-bold tracking-wider">
+                {{
+                  formatDate(
+                    selectedIntento.fecha_fin || selectedIntento.fecha_inicio,
                   )
-                "
-                  class="px-2.5 py-1 text-[9px] font-black rounded-full uppercase tracking-wider bg-green-500/10 text-green-500 flex items-center gap-1 shrink-0">
-                  <span class="material-symbols-outlined text-[10px] font-black">check</span>
-                  Correcto
-                </span>
-                <span v-else
-                  class="px-2.5 py-1 text-[9px] font-black rounded-full uppercase tracking-wider bg-red-500/10 text-red-500 flex items-center gap-1 shrink-0">
-                  <span class="material-symbols-outlined text-[10px] font-black">close</span>
-                  Incorrecto
+                }}
+                · Duración:
+                {{
+                  calcDuration(
+                    selectedIntento.fecha_inicio,
+                    selectedIntento.fecha_fin,
+                  )
+                }}
+              </p>
+            </div>
+            <button @click="showModal = false"
+              class="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center text-on-surface/60 hover:bg-red-500/20 hover:text-red-400 transition-all border border-white/5">
+              <span class="material-symbols-outlined text-sm">close</span>
+            </button>
+          </div>
+
+          <!-- Summary badges (Optimizado y Compacto) -->
+          <div class="px-6 py-3.5 md:px-8 grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0 bg-transparent border-b border-white/5">
+            <div class="bg-background/40 rounded-xl p-3 border border-white/5 shadow-inner">
+              <p class="text-[8px] font-black text-on-surface/40 uppercase tracking-widest">
+                Nota
+              </p>
+              <p :class="[
+                'text-xl font-black mt-0.5',
+                selectedIntento.aprobado ? 'text-green-400' : 'text-red-400',
+              ]">
+                {{ Math.round(selectedIntento.nota || 0) }}%
+              </p>
+            </div>
+            <div class="bg-background/40 rounded-xl p-3 border border-white/5 shadow-inner">
+              <p class="text-[8px] font-black text-on-surface/40 uppercase tracking-widest">
+                Aprobación mín.
+              </p>
+              <p class="text-xl font-black text-on-surface mt-0.5">
+                {{
+                  Math.round(selectedIntento.evaluacion?.nota_aprobacion || 0)
+                }}%
+              </p>
+            </div>
+            <div class="bg-background/40 rounded-xl p-3 border border-white/5 shadow-inner flex flex-col justify-center">
+              <p class="text-[8px] font-black text-on-surface/40 uppercase tracking-widest">
+                Estado
+              </p>
+              <div>
+                <span :class="[
+                  'inline-block mt-1 px-2.5 py-0.5 text-[8px] font-black rounded-full uppercase tracking-widest',
+                  selectedIntento.aprobado
+                    ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                    : 'bg-red-500/10 text-red-400 border border-red-500/20',
+                ]">
+                  {{ selectedIntento.aprobado ? "Aprobado" : "Reprobado" }}
                 </span>
               </div>
+            </div>
+            <div class="bg-background/40 rounded-xl p-3 border border-white/5 shadow-inner">
+              <p class="text-[8px] font-black text-on-surface/40 uppercase tracking-widest">
+                Correctas
+              </p>
+              <p class="text-xl font-black text-accent-neon mt-0.5">
+                {{ correctCount }}/{{
+                  selectedIntento.evaluacion?.preguntas?.length || 0
+                }}
+              </p>
+            </div>
+          </div>
 
-              <!-- Options -->
-              <div class="grid grid-cols-1 gap-2">
-                <div v-for="resp in pregunta.respuestas" :key="resp.id" :class="[
-                  'flex items-center gap-3 p-3.5 rounded-xl text-xs transition-all border',
-                  resp.es_correcta === true || resp.es_correcta == 1
-                    ? 'bg-green-500/5 border-green-500/20 text-green-400 font-bold'
-                    : Number(
-                      selectedIntento.respuestas_seleccionadas[
-                      pregunta.id
-                      ],
-                    ) === Number(resp.id)
-                      ? 'bg-red-500/5 border-red-500/20 text-red-400 font-bold'
-                      : 'bg-on-surface/[0.02] border-transparent text-on-surface/50',
-                ]">
-                  <span class="material-symbols-outlined text-sm font-black shrink-0" :class="[
+          <!-- Questions breakdown -->
+          <div class="flex-1 overflow-y-auto p-6 md:p-8 space-y-5 custom-scrollbar bg-background/20">
+            <!-- No answers stored -->
+            <div v-if="!selectedIntento.respuestas_seleccionadas"
+              class="text-center py-14 bg-yellow-500/5 rounded-2xl border border-yellow-500/10">
+              <span class="material-symbols-outlined text-yellow-500 text-4xl mb-3">warning</span>
+              <p class="text-xs font-black text-yellow-500 uppercase tracking-widest">
+                Detalle no disponible
+              </p>
+              <p class="text-xs text-on-surface/40 mt-2 max-w-md mx-auto">
+                Este intento fue realizado antes de la actualización que guarda
+                las respuestas del estudiante.
+              </p>
+            </div>
+
+            <template v-else>
+              <h4 class="text-xs font-black text-on-surface uppercase tracking-widest opacity-80">
+                Desglose de preguntas
+              </h4>
+
+              <div v-for="(pregunta, qIdx) in selectedIntento.evaluacion?.preguntas" :key="pregunta.id"
+                class="p-5 rounded-[20px] bg-surface-container border border-white/5 space-y-3 shadow-lg">
+                <div class="flex items-start justify-between gap-4">
+                  <div class="flex-1">
+                    <span class="text-[10px] font-black text-accent-neon uppercase tracking-wider">
+                      Pregunta {{ qIdx + 1 }} ({{ pregunta.puntos }} pts)
+                    </span>
+                    <h5 class="text-xs md:text-sm font-bold text-on-surface mt-0.5 leading-relaxed">
+                      {{ pregunta.pregunta }}
+                    </h5>
+                  </div>
+                  <!-- Correct / Incorrect / No answer badge -->
+                  <span v-if="
+                    selectedIntento.respuestas_seleccionadas[pregunta.id] ===
+                    undefined
+                  "
+                    class="px-2.5 py-1 text-[9px] font-black rounded-full uppercase tracking-wider bg-white/5 text-on-surface/50 shrink-0 border border-white/5">
+                    Sin responder
+                  </span>
+                  <span v-else-if="
+                    isCorrect(
+                      pregunta,
+                      selectedIntento.respuestas_seleccionadas,
+                    )
+                  "
+                    class="px-2.5 py-1 text-[9px] font-black rounded-full uppercase tracking-wider bg-green-500/10 text-green-400 flex items-center gap-1 shrink-0 border border-green-500/20">
+                    <span class="material-symbols-outlined text-[10px] font-black">check</span>
+                    Correcto
+                  </span>
+                  <span v-else
+                    class="px-2.5 py-1 text-[9px] font-black rounded-full uppercase tracking-wider bg-red-500/10 text-red-400 flex items-center gap-1 shrink-0 border border-red-500/20">
+                    <span class="material-symbols-outlined text-[10px] font-black">close</span>
+                    Incorrecto
+                  </span>
+                </div>
+
+                <!-- Options -->
+                <div class="grid grid-cols-1 gap-2">
+                  <div v-for="resp in pregunta.respuestas" :key="resp.id" :class="[
+                    'flex items-center gap-3 p-3 rounded-xl text-xs transition-all border',
                     resp.es_correcta === true || resp.es_correcta == 1
-                      ? 'text-green-500'
-                      : 'text-red-500',
-                  ]">
-                    {{
-                      resp.es_correcta === true || resp.es_correcta == 1
-                        ? "check_circle"
-                        : Number(
+                      ? 'bg-green-500/10 border-green-500/20 text-green-300 font-bold'
+                      : Number(
                           selectedIntento.respuestas_seleccionadas[
                           pregunta.id
                           ],
                         ) === Number(resp.id)
-                          ? "cancel"
-                          : "radio_button_unchecked"
-                    }}
-                  </span>
-                  <span class="flex-1 min-w-0">{{ resp.respuesta }}</span>
-                  <span v-if="
-                    Number(
-                      selectedIntento.respuestas_seleccionadas[pregunta.id],
-                    ) === Number(resp.id)
-                  "
-                    class="text-[8px] font-black uppercase tracking-wider bg-on-surface/10 px-2 py-0.5 rounded text-on-surface/60 shrink-0">
-                    Elección del estudiante
-                  </span>
+                        ? 'bg-red-500/10 border-red-500/20 text-red-300 font-bold'
+                        : 'bg-background/40 border-white/5 text-on-surface/50',
+                  ]">
+                    <span class="material-symbols-outlined text-sm font-black shrink-0" :class="[
+                      resp.es_correcta === true || resp.es_correcta == 1
+                        ? 'text-green-400'
+                        : Number(
+                            selectedIntento.respuestas_seleccionadas[
+                            pregunta.id
+                            ],
+                          ) === Number(resp.id)
+                          ? 'text-red-400'
+                          : 'text-on-surface/30',
+                    ]">
+                      {{
+                        resp.es_correcta === true || resp.es_correcta == 1
+                          ? "check_circle"
+                          : Number(
+                              selectedIntento.respuestas_seleccionadas[
+                              pregunta.id
+                              ],
+                            ) === Number(resp.id)
+                            ? "cancel"
+                            : "radio_button_unchecked"
+                      }}
+                    </span>
+                    <span class="flex-1 min-w-0">{{ resp.respuesta }}</span>
+                    <span v-if="
+                      Number(
+                        selectedIntento.respuestas_seleccionadas[pregunta.id],
+                      ) === Number(resp.id)
+                    "
+                      class="text-[8px] font-black uppercase tracking-wider bg-white/10 px-2 py-0.5 rounded text-on-surface/80 shrink-0 border border-white/5">
+                      Elección del estudiante
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          </template>
-        </div>
+            </template>
+          </div>
 
-        <!-- Modal Footer -->
-        <div class="p-6 border-t border-slate-200/60 dark:border-white/5 flex justify-between items-center shrink-0">
-          <div
-            class="flex items-center gap-2 bg-slate-200/50 dark:bg-white/5 p-1 rounded-2xl border border-slate-300/60 dark:border-white/10 shadow-sm dark:shadow-inner transition-colors duration-300">
-            <button @click="exportIndividualPDF" :disabled="exportStatus.individualPdf !== 'idle'"
-              class="relative h-10 px-3 sm:px-4 rounded-xl hover:bg-rose-500/15 dark:hover:bg-rose-500/20 text-slate-700 dark:text-white/80 hover:text-rose-600 dark:hover:text-rose-400 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-[10px] sm:text-xs tracking-wider transition-all flex items-center justify-center min-w-[70px] sm:min-w-[85px] overflow-hidden"
-              title="Exportar PDF Individual">
-              <div v-if="exportStatus.individualPdf === 'idle'" class="flex items-center gap-1.5 transition-all">
-                <span class="material-symbols-outlined text-[18px]">picture_as_pdf</span>
-                <span class="hidden sm:inline">PDF</span>
-              </div>
-              <span v-else-if="exportStatus.individualPdf === 'loading'"
-                class="material-symbols-outlined text-[18px] animate-spin text-rose-600 dark:text-rose-400">sync</span>
-              <span v-else-if="exportStatus.individualPdf === 'success'"
-                class="material-symbols-outlined text-[22px] text-emerald-500 animate-bounce">check_circle</span>
+          <!-- Modal Footer -->
+          <div class="p-4 md:p-5 bg-transparent border-t border-white/5 flex justify-between items-center shrink-0">
+            <div
+              class="flex items-center gap-2 bg-background/40 p-1 rounded-xl border border-white/5 shadow-inner">
+              <button @click="exportIndividualPDF" :disabled="exportStatus.individualPdf !== 'idle'"
+                class="relative h-9 px-3 rounded-lg hover:bg-rose-500/15 text-on-surface/80 hover:text-rose-400 disabled:opacity-50 disabled:cursor-not-allowed font-bold text-[10px] tracking-wider transition-all flex items-center justify-center min-w-[70px] overflow-hidden border border-white/5"
+                title="Exportar PDF Individual">
+                <div v-if="exportStatus.individualPdf === 'idle'" class="flex items-center gap-1.5 transition-all">
+                  <span class="material-symbols-outlined text-[16px]">picture_as_pdf</span>
+                  <span class="hidden sm:inline">PDF</span>
+                </div>
+                <span v-else-if="exportStatus.individualPdf === 'loading'"
+                  class="material-symbols-outlined text-[16px] animate-spin text-rose-400">sync</span>
+                <span v-else-if="exportStatus.individualPdf === 'success'"
+                  class="material-symbols-outlined text-[18px] text-emerald-400 animate-bounce">check_circle</span>
+              </button>
+            </div>
+            <button @click="showModal = false"
+              class="py-2.5 px-5 rounded-xl bg-white/5 hover:bg-white/10 text-on-surface text-xs font-black uppercase tracking-wider border border-white/10 transition-all active:scale-95 shadow-lg">
+              Cerrar Detalle
             </button>
           </div>
-          <button @click="showModal = false"
-            class="btn-premium btn-secondary-glass !py-2.5 !px-6 transition-transform active:scale-95">
-            Cerrar Detalle
-          </button>
 
         </div>
       </div>
-    </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted,watch } from "vue";
 import api from "@/services/api";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
@@ -458,6 +469,14 @@ const exportStatus = ref({
   pdf: "idle",
   excel: "idle",
   individualPdf: 'idle'
+});
+
+watch(showModal, (isOpen) => {
+  if (isOpen) {
+    document.body.classList.add('overflow-hidden');
+  } else {
+    document.body.classList.remove('overflow-hidden');
+  }
 });
 
 // ---- fetch ----
@@ -552,6 +571,7 @@ const correctCount = computed(() => {
   ).length;
 });
 
+// Función auxiliar para cargar logos locales y convertirlos a PNG Base64 real
 const loadLogoToPngBase64 = (url) => {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -569,37 +589,135 @@ const loadLogoToPngBase64 = (url) => {
   });
 };
 
+// Helper seguro para convertir SVG a PNG Base64 para el pie de página
+const svgToPngBase64 = (svgString, width = 24, height = 24) => {
+  return new Promise((resolve) => {
+    const encoded = encodeURIComponent(svgString);
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = () => resolve(null);
+    img.src = `data:image/svg+xml;charset=utf-8,${encoded}`;
+  });
+};
 
 const exportIndividualPDF = async () => {
   if (!selectedIntento.value) return;
   if (exportStatus.value.individualPdf !== 'idle') return;
 
   exportStatus.value.individualPdf = 'loading';
+  const pageWidth = 595.28; // Ancho A4 Portrait en puntos
+  const usableWidth = pageWidth - 80; // Márgenes de 40 izquierdo y derecho
 
   try {
+    await new Promise(r => setTimeout(r, 600));
+
+    // 1. Cargar logotipo
     let logoDataUrl = null;
     try {
-      logoDataUrl = await loadLogoToPngBase64('/logo-dark.webp');
+      const logoPath = `${import.meta.env.BASE_URL}logo-dark.webp`.replace(/\/+/g, '/');
+      logoDataUrl = await loadLogoToPngBase64(logoPath);
     } catch (e) {
       console.warn("No se pudo cargar logo", e);
     }
 
-    const headerColumns = [];
-    if (logoDataUrl) {
-      headerColumns.push({ image: logoDataUrl, width: 130, alignment: 'left' });
-    } else {
-      headerColumns.push({ text: 'ENERVIDA', fontSize: 16, bold: true, color: '#2C3E50', alignment: 'left' });
-    }
+    // 2. Cargar íconos institucionales para cabecera y pie
+    const [iconLoc, iconPhone, iconWeb, iconRecycle, iconEmail, iconWsp, iconIn] = await Promise.all([
+      svgToPngBase64('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E67E22" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>'),
+      svgToPngBase64('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E67E22" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>'),
+      svgToPngBase64('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E67E22" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>'),
+      svgToPngBase64('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7F8C8D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 10 12 5 17 10"/><line x1="12" y1="5" x2="12" y2="22"/></svg>'),
+      svgToPngBase64('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#E67E22"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-5h2v5h-2zm0-7v-2h2v2h-2z"/></svg>'),
+      svgToPngBase64('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#E67E22"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>'),
+      svgToPngBase64('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#E67E22"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>')
+    ]);
 
-    headerColumns.push({
-      width: '*',
-      stack: [
-        { text: 'REPORTE DE CALIFICACIÓN', style: 'pdfTitle' },
-        { text: 'DOCUMENTO ACADÉMICO OFICIAL', style: 'pdfSubtitle' },
-        { text: `Fecha de emisión: ${new Date().toLocaleDateString('es-BO')}`, style: 'pdfDate' }
+    // 3. Estructura de la Cabecera Institucional
+    const contactInfo = [
+      { text: 'Oficina Central y Centro Demostrativo:', bold: true, fontSize: 7.5, color: '#2C3E50' },
+      { text: 'Calle Condorini, N° 118, zona Anari, Marquirivi - GAMEP Achocalla, La Paz, Bolivia', fontSize: 7.5, color: '#2C3E50', margin: [0, 1, 0, 3] },
+      { 
+        columns: [
+          ...(iconPhone ? [{ image: iconPhone, width: 9, height: 9, margin: [0, 1, 3, 0] }] : []),
+          { text: '+591 732 36591  |  boris.ardaya@enervida.info', fontSize: 7.5, color: '#2C3E50' }
+        ],
+        columnGap: 4
+      }
+    ];
+
+    const headerConfig = {
+      columns: [
+        {
+          columns: [
+            ...(iconLoc ? [{ image: iconLoc, width: 10, height: 10, margin: [0, 1, 4, 0] }] : []),
+            { stack: contactInfo }
+          ],
+          width: '65%',
+          alignment: 'left'
+        },
+        ...(logoDataUrl ? [{ image: logoDataUrl, width: 130, alignment: 'right', margin: [0, 5, 0, 0] }] : [])
       ],
-      alignment: 'right',
-      margin: [0, logoDataUrl ? 10 : 0, 0, 0]
+      margin: [40, 25, 40, 0]
+    };
+
+    const dividerLine = {
+      canvas: [{ type: 'line', x1: 0, y1: 0, x2: usableWidth, y2: 0, lineWidth: 1.5, lineColor: '#E67E22' }],
+      margin: [40, 8, 40, 15]
+    };
+
+    // 4. Pie de página institucional
+    const socialIconsRow = [
+      ...(iconEmail ? [{ image: iconEmail, width: 13, height: 13, link: 'mailto:boris.ardaya@enervida.info' }] : []),
+      { text: '|', color: '#7EA172', fontSize: 10, margin: [2, 0, 2, 0] },
+      ...(iconWeb ? [{ image: iconWeb, width: 13, height: 13, link: 'https://www.enervida.info' }] : []),
+      { text: '|', color: '#7EA172', fontSize: 10, margin: [2, 0, 2, 0] },
+      ...(iconWsp ? [{ image: iconWsp, width: 13, height: 13, link: 'https://wa.me/59173236591' }] : []),
+      { text: '|', color: '#7EA172', fontSize: 10, margin: [2, 0, 2, 0] },
+      ...(iconIn ? [{ image: iconIn, width: 13, height: 13, link: 'https://linkedin.com/company/enervida' }] : [])
+    ];
+
+    const footerConfig = (currentPage, pageCount) => ({
+      stack: [
+        {
+          canvas: [{ type: 'line', x1: 0, y1: 0, x2: usableWidth, y2: 0, lineWidth: 1.5, lineColor: '#E67E22' }],
+          margin: [40, 0, 40, 6]
+        },
+        {
+          columns: [
+            {
+              columns: [
+                ...(iconRecycle ? [{ image: iconRecycle, width: 11, height: 11, margin: [0, 0, 4, 0] }] : []),
+                { text: 'Utilizamos papel de reciclaje para contribuir a la ODS 13 – Acción por el clima.', fontSize: 7.5, color: '#2C3E50' }
+              ],
+              width: '*',
+              alignment: 'left'
+            },
+            {
+              text: `Página | ${currentPage}`,
+              alignment: 'right',
+              fontSize: 8,
+              bold: true,
+              color: '#2C3E50',
+              width: 'auto'
+            }
+          ],
+          margin: [40, 0, 40, 4]
+        },
+        {
+          columns: socialIconsRow,
+          columnGap: 6,
+          alignment: 'center',
+          margin: [40, 0, 40, 10]
+        }
+      ]
     });
 
     const intento = selectedIntento.value;
@@ -607,18 +725,18 @@ const exportIndividualPDF = async () => {
     const notaMinima = Math.round(intento.evaluacion?.nota_aprobacion || 0) + '%';
     const estado = intento.aprobado ? 'APROBADO' : 'REPROBADO';
     const colorEstado = intento.aprobado ? '#27AE60' : '#E74C3C';
-
     const correctas = correctCount.value;
     const totalPreguntas = intento.evaluacion?.preguntas?.length || 0;
 
     const docDefinition = {
       pageSize: 'A4',
       pageOrientation: 'portrait',
-      pageMargins: [40, 45, 40, 45],
+      pageMargins: [40, 105, 40, 75],
+      header: headerConfig,
       content: [
-        { columns: headerColumns },
-        { canvas: [{ type: 'line', x1: 0, y1: 12, x2: 515, y2: 12, lineWidth: 1.5, lineColor: '#2C3E50' }] },
-        { text: '', margin: [0, 0, 0, 25] },
+        dividerLine,
+        { text: 'REPORTE DE CALIFICACIÓN OFICIAL', style: 'pdfTitle', alignment: 'center' },
+        { text: `Fecha de emisión: ${new Date().toLocaleDateString('es-BO')}`, style: 'pdfSubtitle', alignment: 'center', margin: [0, 2, 0, 15] },
 
         // Datos del Estudiante y Curso
         {
@@ -634,13 +752,13 @@ const exportIndividualPDF = async () => {
                 {
                   stack: [
                     { text: `${intento.usuario?.nombres || ''} ${intento.usuario?.apellidos || ''}`, bold: true },
-                    { text: intento.usuario?.correo || '', color: '#7F8C8D', fontSize: 10 }
+                    { text: intento.usuario?.correo || '', color: '#7F8C8D', fontSize: 9.5 }
                   ]
                 },
                 {
                   stack: [
                     { text: intento.evaluacion?.curso?.titulo || '—', bold: true },
-                    { text: intento.evaluacion?.titulo || '', color: '#7F8C8D', fontSize: 10 }
+                    { text: intento.evaluacion?.titulo || '', color: '#7F8C8D', fontSize: 9.5 }
                   ]
                 }
               ],
@@ -656,7 +774,7 @@ const exportIndividualPDF = async () => {
           },
           layout: 'lightHorizontalLines'
         },
-        { text: '', margin: [0, 0, 0, 20] },
+        { text: '', margin: [0, 0, 0, 15] },
 
         // Resumen de Calificación
         {
@@ -677,11 +795,9 @@ const exportIndividualPDF = async () => {
           },
           layout: {
             defaultBorder: false,
-            fillColor: function (rowIndex) {
-              return rowIndex === 0 ? '#F8F9FA' : null;
-            }
+            fillColor: (rowIndex) => (rowIndex === 0 ? '#F8F9FA' : null)
           },
-          margin: [0, 0, 0, 30]
+          margin: [0, 0, 0, 20]
         },
 
         // Detalles de la evaluación
@@ -700,7 +816,7 @@ const exportIndividualPDF = async () => {
             ]
           },
           layout: 'lightHorizontalLines',
-          margin: [0, 0, 0, 60]
+          margin: [0, 0, 0, 40]
         },
 
         // Firmas
@@ -708,17 +824,17 @@ const exportIndividualPDF = async () => {
           columns: [
             {
               stack: [
-                { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 1, lineColor: '#95A5A6' }] },
-                { text: 'Firma del Estudiante', bold: true, margin: [0, 5, 0, 0] },
-                { text: 'CI / Identificación', fontSize: 9, color: '#7F8C8D' }
+                { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 180, y2: 0, lineWidth: 1, lineColor: '#95A5A6' }] },
+                { text: 'Firma del Estudiante', bold: true, margin: [0, 5, 0, 0], fontSize: 9 },
+                { text: 'CI / Identificación', fontSize: 8, color: '#7F8C8D' }
               ],
               alignment: 'center'
             },
             {
               stack: [
-                { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 1, lineColor: '#95A5A6' }] },
-                { text: 'Firma Autorizada', bold: true, margin: [0, 5, 0, 0] },
-                { text: 'Director Académico', fontSize: 9, color: '#7F8C8D' }
+                { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 180, y2: 0, lineWidth: 1, lineColor: '#95A5A6' }] },
+                { text: 'Firma Autorizada', bold: true, margin: [0, 5, 0, 0], fontSize: 9 },
+                { text: 'Director Académico', fontSize: 8, color: '#7F8C8D' }
               ],
               alignment: 'center'
             }
@@ -726,31 +842,19 @@ const exportIndividualPDF = async () => {
         }
       ],
       styles: {
-        pdfTitle: { fontSize: 16, bold: true, color: '#2C3E50' },
-        pdfSubtitle: { fontSize: 11, bold: true, color: '#2980B9', margin: [0, 2, 0, 2] },
-        pdfDate: { fontSize: 8.5, italics: true, color: '#7F8C8D' },
-        tableHeader: { fontSize: 9, bold: true, color: '#7F8C8D', margin: [0, 5, 0, 5] },
-        metricLabel: { fontSize: 9, bold: true, color: '#7F8C8D', alignment: 'center', margin: [0, 10, 0, 5] },
-        metricValue: { fontSize: 24, bold: true, color: '#2C3E50', alignment: 'center', margin: [0, 5, 0, 15] },
-        sectionTitle: { fontSize: 12, bold: true, color: '#2C3E50', margin: [0, 0, 0, 10] }
+        pdfTitle: { fontSize: 14, bold: true, color: '#2C3E50' },
+        pdfSubtitle: { fontSize: 8.5, italics: true, color: '#7F8C8D' },
+        tableHeader: { fontSize: 8.5, bold: true, color: '#7F8C8D', margin: [0, 4, 0, 4] },
+        metricLabel: { fontSize: 8.5, bold: true, color: '#7F8C8D', alignment: 'center', margin: [0, 8, 0, 4] },
+        metricValue: { fontSize: 20, bold: true, color: '#2C3E50', alignment: 'center', margin: [0, 4, 0, 10] },
+        sectionTitle: { fontSize: 11, bold: true, color: '#2C3E50', margin: [0, 0, 0, 8] }
       },
-      footer: (currentPage, pageCount) => {
-        return {
-          columns: [
-            { text: 'Este documento es un reporte de control académico interno.', alignment: 'left', fontSize: 8, color: '#95A5A6' },
-            { text: `Página ${currentPage} de ${pageCount}`, alignment: 'right', fontSize: 8, color: '#95A5A6' }
-          ],
-          margin: [40, 0, 40, 0]
-        };
-      }
+      footer: footerConfig
     };
 
-    // Mismo delay y flujo que la función anterior
     exportStatus.value.individualPdf = 'success';
-
-    setTimeout(() => {
+    setTimeout(async () => {
       pdfMake.createPdf(docDefinition).download(`Boleta_Calificacion_${intento.usuario?.nombres || 'Estudiante'}.pdf`);
-
       setTimeout(() => {
         exportStatus.value.individualPdf = 'idle';
       }, 500);
@@ -764,24 +868,16 @@ const exportIndividualPDF = async () => {
 
 const exportData = async (format) => {
   if (exportStatus.value[format] !== "idle") return;
-
-  // Cambiar estado a 'loading' para activar el spinner ('sync')
   exportStatus.value[format] = "loading";
 
   try {
     let downloadAction = null;
-
-    // Simular un sutil tiempo de procesamiento para el spinner de la interfaz
     await new Promise((r) => setTimeout(r, 600));
 
-    // ==========================================
-    // 1. EXPORTAR A EXCEL (EXCELJS)
-    // ==========================================
     if (format === "excel") {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Calificaciones");
 
-      // Columnas
       worksheet.columns = [
         { header: "ESTUDIANTE", key: "estudiante", width: 30 },
         { header: "CORREO", key: "correo", width: 25 },
@@ -792,25 +888,14 @@ const exportData = async (format) => {
         { header: "FECHA", key: "fecha", width: 15 },
       ];
 
-      // Cabecera Institucional
       const headerRow = worksheet.getRow(1);
       headerRow.height = 26;
       headerRow.eachCell((cell) => {
-        cell.fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: "FF2C3E50" },
-        };
-        cell.font = {
-          name: "Segoe UI",
-          size: 10,
-          bold: true,
-          color: { argb: "FFFFFFFF" },
-        };
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2C3E50" } };
+        cell.font = { name: "Segoe UI", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
         cell.alignment = { vertical: "middle", horizontal: "center" };
       });
 
-      // Filas dinámicas
       intentosFiltrados.value.forEach((i) => {
         const isApproved = i.aprobado;
         const row = worksheet.addRow({
@@ -826,63 +911,114 @@ const exportData = async (format) => {
         row.height = 20;
         row.eachCell((cell) => {
           cell.font = { name: "Segoe UI", size: 9 };
-          cell.border = {
-            bottom: { style: "thin", color: { argb: "FFE0E0E0" } },
-          };
+          cell.border = { bottom: { style: "thin", color: { argb: "FFE0E0E0" } } };
         });
       });
 
       downloadAction = async () => {
         const buffer = await workbook.xlsx.writeBuffer();
-        const blob = new Blob([buffer], {
-          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        });
+        const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
         saveAs(blob, `Listado_Calificaciones_${Date.now()}.xlsx`);
       };
 
-      // ==========================================
-      // 2. EXPORTAR A PDF (PDFMAKE)
-      // ==========================================
     } else if (format === "pdf") {
+      const pageWidth = 842.89; // Landscape A4
+      const usableWidth = pageWidth - 60;
+
       let logoDataUrl = null;
       try {
-        logoDataUrl = await loadLogoToPngBase64("/logo-dark.webp");
+        const logoPath = `${import.meta.env.BASE_URL}logo-dark.webp`.replace(/\/+/g, '/');
+        logoDataUrl = await loadLogoToPngBase64(logoPath);
       } catch (e) {
         console.warn("No se pudo cargar logo", e);
       }
 
-      const headerColumns = [];
-      if (logoDataUrl) {
-        headerColumns.push({
-          image: logoDataUrl,
-          width: 130,
-          alignment: "left",
-        });
-      } else {
-        headerColumns.push({
-          text: "ENERVIDA",
-          fontSize: 16,
-          bold: true,
-          color: "#2C3E50",
-          alignment: "left",
-        });
-      }
+      const [iconLoc, iconPhone, iconWeb, iconRecycle, iconEmail, iconWsp, iconIn] = await Promise.all([
+        svgToPngBase64('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E67E22" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>'),
+        svgToPngBase64('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E67E22" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>'),
+        svgToPngBase64('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#E67E22" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>'),
+        svgToPngBase64('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7F8C8D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 10 12 5 17 10"/><line x1="12" y1="5" x2="12" y2="22"/></svg>'),
+        svgToPngBase64('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#E67E22"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-5h2v5h-2zm0-7v-2h2v2h-2z"/></svg>'),
+        svgToPngBase64('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#E67E22"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>'),
+        svgToPngBase64('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#E67E22"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>')
+      ]);
 
-      headerColumns.push({
-        width: "*",
-        stack: [
-          { text: "REPORTE GENERAL DE CALIFICACIONES", style: "pdfTitle" },
+      const contactInfo = [
+        { text: 'Oficina Central y Centro Demostrativo:', bold: true, fontSize: 8, color: '#2C3E50' },
+        { text: 'Calle Condorini, N° 118, zona Anari, Marquirivi - GAMEP Achocalla, La Paz, Bolivia', fontSize: 8, color: '#2C3E50', margin: [0, 1, 0, 4] },
+        { 
+          columns: [
+            ...(iconPhone ? [{ image: iconPhone, width: 10, height: 10, margin: [0, 1, 3, 0] }] : []),
+            { text: '+591 732 36591  |  boris.ardaya@enervida.info', fontSize: 8, color: '#2C3E50' }
+          ],
+          columnGap: 4
+        }
+      ];
+
+      const headerConfig = {
+        columns: [
           {
-            text: `Total Registros: ${intentosFiltrados.value.length}`,
-            style: "pdfSubtitle",
+            columns: [
+              ...(iconLoc ? [{ image: iconLoc, width: 11, height: 11, margin: [0, 1, 4, 0] }] : []),
+              { stack: contactInfo }
+            ],
+            width: '65%',
+            alignment: 'left'
           },
-          {
-            text: `Fecha de emisión: ${new Date().toLocaleDateString("es-BO")}`,
-            style: "pdfDate",
-          },
+          ...(logoDataUrl ? [{ image: logoDataUrl, width: 150, alignment: 'right', margin: [0, 5, 0, 0] }] : [])
         ],
-        alignment: "right",
-        margin: [0, logoDataUrl ? 10 : 0, 0, 0],
+        margin: [30, 25, 30, 0]
+      };
+
+      const dividerLine = {
+        canvas: [{ type: 'line', x1: 0, y1: 0, x2: usableWidth, y2: 0, lineWidth: 1.5, lineColor: '#E67E22' }],
+        margin: [30, 8, 30, 15]
+      };
+
+      const socialIconsRow = [
+        ...(iconEmail ? [{ image: iconEmail, width: 15, height: 15, link: 'mailto:boris.ardaya@enervida.info' }] : []),
+        { text: '|', color: '#7EA172', fontSize: 11, margin: [2, 0, 2, 0] },
+        ...(iconWeb ? [{ image: iconWeb, width: 15, height: 15, link: 'https://www.enervida.info' }] : []),
+        { text: '|', color: '#7EA172', fontSize: 11, margin: [2, 0, 2, 0] },
+        ...(iconWsp ? [{ image: iconWsp, width: 15, height: 15, link: 'https://wa.me/59173236591' }] : []),
+        { text: '|', color: '#7EA172', fontSize: 11, margin: [2, 0, 2, 0] },
+        ...(iconIn ? [{ image: iconIn, width: 15, height: 15, link: 'https://linkedin.com/company/enervida' }] : [])
+      ];
+
+      const footerConfig = (currentPage, pageCount) => ({
+        stack: [
+          {
+            canvas: [{ type: 'line', x1: 0, y1: 0, x2: usableWidth, y2: 0, lineWidth: 1.5, lineColor: '#E67E22' }],
+            margin: [30, 0, 30, 6]
+          },
+          {
+            columns: [
+              {
+                columns: [
+                  ...(iconRecycle ? [{ image: iconRecycle, width: 12, height: 12, margin: [0, 0, 4, 0] }] : []),
+                  { text: 'Utilizamos papel de reciclaje para contribuir a la ODS 13 – Acción por el clima.', fontSize: 8, color: '#2C3E50' }
+                ],
+                width: '*',
+                alignment: 'left'
+              },
+              {
+                text: `Página | ${currentPage}`,
+                alignment: 'right',
+                fontSize: 8.5,
+                bold: true,
+                color: '#2C3E50',
+                width: 'auto'
+              }
+            ],
+            margin: [30, 0, 30, 4]
+          },
+          {
+            columns: socialIconsRow,
+            columnGap: 6,
+            alignment: 'center',
+            margin: [30, 0, 30, 12]
+          }
+        ]
       });
 
       const tableBody = [];
@@ -899,119 +1035,54 @@ const exportData = async (format) => {
       intentosFiltrados.value.forEach((i) => {
         const isApproved = i.aprobado;
         tableBody.push([
-          {
-            text: `${i.usuario?.nombres || ""} ${i.usuario?.apellidos || ""}`,
-            fontSize: 9,
-            bold: true,
-          },
+          { text: `${i.usuario?.nombres || ""} ${i.usuario?.apellidos || ""}`, fontSize: 9, bold: true },
           { text: i.usuario?.correo || "", fontSize: 9, color: "#7F8C8D" },
           { text: i.evaluacion?.curso?.titulo || "—", fontSize: 9 },
           { text: i.evaluacion?.titulo || "", fontSize: 9 },
-          {
-            text: Math.round(i.nota || 0) + "%",
-            fontSize: 9,
-            bold: true,
-            alignment: "center",
-            color: isApproved ? "#27AE60" : "#E74C3C",
-          },
-          {
-            text: isApproved ? "Aprobado" : "Reprobado",
-            fontSize: 9,
-            bold: true,
-            alignment: "center",
-            color: isApproved ? "#27AE60" : "#E74C3C",
-          },
-          {
-            text: formatDate(i.fecha_fin || i.fecha_inicio),
-            fontSize: 9,
-            alignment: "center",
-          },
+          { text: Math.round(i.nota || 0) + "%", fontSize: 9, bold: true, alignment: "center", color: isApproved ? "#27AE60" : "#E74C3C" },
+          { text: isApproved ? "Aprobado" : "Reprobado", fontSize: 9, bold: true, alignment: "center", color: isApproved ? "#27AE60" : "#E74C3C" },
+          { text: formatDate(i.fecha_fin || i.fecha_inicio), fontSize: 9, alignment: "center" },
         ]);
       });
 
       const docDefinition = {
         pageSize: "A4",
         pageOrientation: "landscape",
-        pageMargins: [40, 45, 40, 45],
+        pageMargins: [30, 105, 30, 80],
+        header: headerConfig,
         content: [
-          { columns: headerColumns },
-          {
-            canvas: [
-              {
-                type: "line",
-                x1: 0,
-                y1: 12,
-                x2: 762,
-                y2: 12,
-                lineWidth: 1.5,
-                lineColor: "#2C3E50",
-              },
-            ],
-          },
-          { text: "", margin: [0, 0, 0, 25] },
+          dividerLine,
+          { text: 'REPORTE GENERAL DE CALIFICACIONES', style: 'pdfTitle', alignment: 'center' },
+          { text: `Total Registros: ${intentosFiltrados.value.length}  |  Fecha de emisión: ${new Date().toLocaleDateString("es-BO")}`, style: 'pdfSubtitle', alignment: 'center', margin: [0, 2, 0, 15] },
           {
             table: {
               headerRows: 1,
-              widths: ["auto", "auto", "*", "*", "auto", "auto", "auto"],
+              widths: ["15%", "17%", "18%", "22%", "8%", "10%", "10%"],
               body: tableBody,
             },
             layout: {
-              fillColor: (rowIndex) => (rowIndex === 0 ? "#F8F9FA" : null),
-              hLineWidth: (i, node) =>
-                i === 0 || i === node.table.body.length ? 1 : 0.5,
-              vLineWidth: () => 0,
-              hLineColor: () => "#E0E0E0",
+              hLineColor: (i) => (i === 0 || i === 1) ? '#2C3E50' : '#E0E0E0',
+              vLineColor: () => '#E0E0E0',
+              hLineWidth: (i) => (i === 0 || i === 1) ? 1.5 : 0.5,
+              vLineWidth: () => 0.5,
               paddingTop: () => 5,
               paddingBottom: () => 5,
             },
           },
         ],
         styles: {
-          pdfTitle: { fontSize: 16, bold: true, color: "#2C3E50" },
-          pdfSubtitle: {
-            fontSize: 11,
-            bold: true,
-            color: "#2980B9",
-            margin: [0, 2, 0, 2],
-          },
-          pdfDate: { fontSize: 8.5, italics: true, color: "#7F8C8D" },
-          tableHeader: {
-            fontSize: 9,
-            bold: true,
-            color: "#2C3E50",
-            fillColor: "#F8F9FA",
-            margin: [0, 5, 0, 5],
-          },
+          pdfTitle: { fontSize: 15, bold: true, color: '#2C3E50' },
+          pdfSubtitle: { fontSize: 8.5, italics: true, color: '#95A5A6' },
+          tableHeader: { bold: true, fontSize: 9, color: 'white', fillColor: '#2C3E50', alignment: 'center', margin: [0, 4, 0, 4] }
         },
-        footer: (currentPage, pageCount) => ({
-          columns: [
-            {
-              text: "Generado por Enervida LMS",
-              alignment: "left",
-              fontSize: 8,
-              color: "#95A5A6",
-            },
-            {
-              text: `Página ${currentPage} de ${pageCount}`,
-              alignment: "right",
-              fontSize: 8,
-              color: "#95A5A6",
-            },
-          ],
-          margin: [40, 0, 40, 0],
-        }),
+        footer: footerConfig
       };
 
-      downloadAction = () =>
-        pdfMake
-          .createPdf(docDefinition)
-          .download(`Listado_Calificaciones_${Date.now()}.pdf`);
+      downloadAction = async () => {
+        pdfMake.createPdf(docDefinition).download(`Listado_Calificaciones_${Date.now()}.pdf`);
+      };
     }
 
-    // ==========================================
-    // CAMBIO DE ESTADO Y DISPARO DE DESCARGA
-    // (Mismo comportamiento de sincronización visual)
-    // ==========================================
     exportStatus.value[format] = "success";
     setTimeout(async () => {
       if (downloadAction) await downloadAction();
@@ -1019,6 +1090,7 @@ const exportData = async (format) => {
         exportStatus.value[format] = "idle";
       }, 500);
     }, 1200);
+
   } catch (e) {
     console.error("Error crítico durante la exportación:", e);
     exportStatus.value[format] = "idle";

@@ -29,10 +29,10 @@
         </p>
         
         <div class="flex flex-col sm:flex-row gap-4 pt-4">
-          <button @click="$router.push('/register')" class="btn-premium btn-primary-neon !px-10 !py-4 shadow-neon-sm">
+          <button @click="$router.push('/login')" class="btn-premium btn-primary-neon !px-10 !py-4 shadow-neon-sm">
             Empezar ahora
           </button>
-          <button class="btn-premium btn-secondary-glass !px-10 !py-4">
+          <button @click="$router.push('/cursos/vivenciales')" class="btn-premium btn-secondary-glass !px-10 !py-4">
             Ver Cursos
           </button>
         </div>

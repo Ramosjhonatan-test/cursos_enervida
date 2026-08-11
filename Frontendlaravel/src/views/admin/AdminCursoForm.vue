@@ -29,7 +29,7 @@
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div class="space-y-2">
-                <label class="text-[11px] font-black text-on-surface-variant uppercase tracking-[0.2em] ml-1">Slug (URL amigable)</label>
+                <label class="text-[11px] font-black text-on-surface-variant uppercase tracking-[0.2em] ml-1">Slug o Prefijo</label>
                 <input type="text" v-model="form.slug" required placeholder="curso-energia-solar" class="input-cyber w-full opacity-70 text-sm" />
               </div>
 

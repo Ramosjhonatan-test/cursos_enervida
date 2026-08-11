@@ -101,11 +101,11 @@
         <div class="mt-auto space-y-4 pt-6">
           <div class="flex justify-between text-[10px] font-black uppercase tracking-tighter">
             <span class="text-on-surface/40">Preguntas</span>
-            <span class="text-on-surface">{{ evaluacion.preguntas_count ?? evaluacion._count?.preguntas ?? 0 }} ítems</span>
-          </div>
+            <span class="text-on-surface">{{ evaluacion.preguntas_count ?? evaluacion._count?.preguntas ?? 0 }} Preguntas</span>
+          </div>          
           <div class="flex justify-between text-[10px] font-black uppercase tracking-tighter">
             <span class="text-on-surface/40">Min. Aprobación</span>
-            <span class="text-accent-neon">{{ evaluacion.porcentaje_aprobacion }}%</span>
+            <span class="text-accent-neon">{{ (evaluacion.nota_aprobacion ?? evaluacion.porcentaje_aprobacion) ? ((evaluacion.nota_aprobacion ?? evaluacion.porcentaje_aprobacion) + '%') : '—' }}</span>
           </div>
           <div class="flex justify-between text-[10px] font-black uppercase tracking-tighter">
             <span class="text-on-surface/40">Intentos</span>
@@ -258,6 +258,30 @@ const deleteEvaluacion = async (id) => {
 
 const manageQuestions = (evaluacion) => {
   router.push({ name: 'admin-preguntas', params: { id: evaluacion.id } })
+}
+
+const formatPoints = (evaluacion) => {
+  // Prefer explicit preguntas array if available
+  if (Array.isArray(evaluacion.preguntas) && evaluacion.preguntas.length) {
+    const sum = evaluacion.preguntas.reduce((s, p) => s + Number(p.puntos || 0), 0)
+    return `${sum} Puntos`
+  }
+  // Fallback to a numeric field if backend provides it
+  if (typeof evaluacion.total_puntos === 'number') return `${evaluacion.total_puntos} Puntos`
+  return '—'
+}
+
+const getPointsClass = (evaluacion) => {
+  let sum = null
+  if (Array.isArray(evaluacion.preguntas) && evaluacion.preguntas.length) {
+    sum = evaluacion.preguntas.reduce((s, p) => s + Number(p.puntos || 0), 0)
+  } else if (typeof evaluacion.total_puntos === 'number') {
+    sum = evaluacion.total_puntos
+  }
+  if (sum === null) return 'text-on-surface'
+  if (sum > 100) return 'text-red-500'
+  if (sum < 100) return 'text-yellow-400'
+  return 'text-green-500'
 }
 
 onMounted(() => {

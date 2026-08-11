@@ -41,7 +41,30 @@ class EvaluacionController extends Controller
 
     public function show($id)
     {
-        return response()->json(Evaluacion::with(['curso', 'preguntas.respuestas'])->findOrFail($id));
+        $evaluacion = Evaluacion::with(['curso', 'preguntas.respuestas'])->findOrFail($id);
+
+        if (auth('api')->check()) {
+            $user = auth('api')->user();
+            $user->loadMissing('rol');
+
+            $puedeGestionarEvaluacion = $user->isAdmin() || $user->isInstructor() || $user->hasAdminModule('EVALUACIONES');
+
+            if (!$puedeGestionarEvaluacion) {
+                $userId = $user->id;
+                $inscripcion = \App\Models\Inscripcion::where('usuario_id', $userId)
+                    ->where('curso_id', $evaluacion->curso_id)
+                    ->whereIn('estado', ['ACTIVO', 'COMPLETADO'])
+                    ->first();
+
+                if (!$inscripcion) {
+                    return response()->json([
+                        'message' => 'No tienes acceso a esta evaluación.'
+                    ], 403);
+                }
+            }
+        }
+
+        return response()->json($evaluacion);
     }
 
     public function update(Request $request, $id)

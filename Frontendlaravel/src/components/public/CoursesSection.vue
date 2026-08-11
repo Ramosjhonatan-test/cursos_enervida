@@ -7,8 +7,8 @@
     <div class="w-full max-w-[1400px] mx-auto px-6 relative z-10">
       <div class="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16 md:mb-24 animate-in slide-in-from-top fade-in duration-1000">
         <div class="max-w-2xl">
-          <span class="text-accent-neon font-black tracking-[0.4em] uppercase text-[10px] mb-4 block drop-shadow-sm opacity-60">Especializaciones Técnicas</span>
-          <h2 class="font-lexend text-4xl md:text-6xl font-bold text-on-surface leading-tight tracking-tighter">Formación de <br/><span class="text-gradient-neon ">Clase Mundial</span></h2>
+          <span class="text-accent-neon font-black tracking-[0.4em] uppercase text-[10px] mb-4 block drop-shadow-sm opacity-60">PROGRAMAS DE CAPACITACIÓN</span>
+          <h2 class="font-lexend text-4xl md:text-6xl font-bold text-on-surface leading-tight tracking-tighter">Formación  <br/><span class="text-gradient-neon ">Experta Garantizada</span></h2>
         </div>
         <div class="flex gap-4 md:gap-6">
           <button class="w-14 h-14 md:w-16 md:h-16 rounded-full glass-premium flex items-center justify-center border-on-surface/5 text-on-surface group hover:scale-110 active:scale-95 transition-all shadow-xl">

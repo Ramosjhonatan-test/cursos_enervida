@@ -59,6 +59,7 @@ class UsuarioController extends Controller
             Usuario::with([
                 'rol',
                 'inscripciones.curso',
+                'certificados.curso',
                 'intentos_evaluacion.evaluacion.curso',
                 'intentos_evaluacion.evaluacion.preguntas.respuestas',
                 'dispositivos',

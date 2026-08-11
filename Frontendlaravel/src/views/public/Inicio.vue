@@ -6,6 +6,7 @@ import BenefitsSection from '@/components/public/BenefitsSection.vue'
 import TestimonialsSection from '@/components/public/TestimonialsSection.vue'
 import CTASection from '@/components/public/CTASection.vue'
 import Footer from '@/components/public/Footer.vue'
+import Contact from '@/components/public/Contact.vue'
 </script>
 
 <template>
@@ -17,6 +18,7 @@ import Footer from '@/components/public/Footer.vue'
       <BenefitsSection />
       <TestimonialsSection />
       <CTASection />
+      <Contact/>
     </main>
     <Footer />
   </div>

@@ -9,7 +9,7 @@
           </router-link>
           <div>
             <h2 class="text-2xl md:text-4xl font-black text-on-surface font-lexend tracking-tighter">
-              Editor de <span class="text-accent-neon italic">Certificado PRO</span>
+              Editor de <span class="text-accent-neon italic">Certificado</span>
             </h2>
             <p class="text-on-surface/40 font-bold uppercase tracking-widest text-[10px] mt-1">{{ curso?.titulo || 'Cargando...' }}</p>
           </div>
@@ -126,43 +126,74 @@
             Capas del Diseño
           </h3>
           
-          <div class="space-y-3 overflow-y-auto pr-2 custom-scrollbar flex-grow">
-            <div v-for="(el, index) in elements" :key="el.id" 
-                 class="group p-4 rounded-2xl transition-all duration-300 cursor-pointer"
-                 :class="[
-                     selectedId === el.id ? 'border-accent-neon bg-accent-neon/5 shadow-neon-sm' : 'border-on-surface/5 bg-on-surface/[0.03] hover:border-on-surface/10',
-                     el.hidden ? 'opacity-40' : ''
-                 ]"
-                 @click="selectedId = el.id">
-              <div class="flex items-center justify-between gap-3">
-                <div class="flex items-center gap-3 min-w-0">
-                    <button @click.stop="el.locked = !el.locked" class="transition-colors" :class="el.locked ? 'text-accent-neon' : 'text-on-surface/10 hover:text-on-surface/30'">
-                        <span class="material-symbols-outlined text-sm">{{ el.locked ? 'lock' : 'lock_open' }}</span>
-                    </button>
-                    <span class="material-symbols-outlined text-lg" :class="selectedId === el.id ? 'text-accent-neon' : 'text-on-surface/20'">
-                        {{ el.type === 'text' ? 'title' : el.type === 'image' ? 'image' : 'qr_code' }}
-                    </span>
-                    <span class="text-[11px] font-bold truncate text-on-surface/80">
-                        {{ el.type === 'text' ? (el.content || 'Texto vacío') : el.type === 'image' ? 'Firma/Imagen' : 'QR Validación' }}
-                    </span>
-                </div>
-                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button @click.stop="el.hidden = !el.hidden" class="p-1 hover:bg-on-surface/10 rounded text-on-surface/40 hover:text-accent-neon">
-                        <span class="material-symbols-outlined text-sm">{{ el.hidden ? 'visibility_off' : 'visibility' }}</span>
-                    </button>
-                    <button @click.stop="moveLayer(index, -1)" :disabled="index === 0" title="Bajar capa" class="p-1 hover:bg-on-surface/10 rounded text-on-surface/40 hover:text-accent-neon disabled:opacity-20">
-                        <span class="material-symbols-outlined text-sm">keyboard_arrow_down</span>
-                    </button>
-                    <button @click.stop="moveLayer(index, 1)" :disabled="index === elements.length - 1" title="Subir capa" class="p-1 hover:bg-on-surface/10 rounded text-on-surface/40 hover:text-accent-neon disabled:opacity-20">
-                        <span class="material-symbols-outlined text-sm">keyboard_arrow_up</span>
-                    </button>
-                    <button @click.stop="removeElement(index)" class="p-1.5 hover:bg-red-500/10 rounded-lg text-on-surface/40 hover:text-red-500">
-                        <span class="material-symbols-outlined text-sm">delete</span>
-                    </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <div class="space-y-2 overflow-y-auto pr-2 custom-scrollbar flex-grow">
+  <div v-for="(el, index) in elements" :key="el.id" 
+       class="group p-3 rounded-xl transition-all duration-150 cursor-pointer flex items-center justify-between gap-3"
+       :class="[
+         selectedId === el.id 
+           ? 'bg-accent-neon/10 border border-accent-neon/30 dark:bg-accent-neon/20' 
+           : 'bg-gray-200/60 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 border border-transparent',
+         el.hidden ? 'opacity-40' : ''
+       ]"
+       @click="selectedId = el.id">
+    
+    <!-- Lado Izquierdo: Candado + Icono tipo + Nombre de Capa -->
+    <div class="flex items-center gap-2.5 min-w-0">
+      <!-- Botón Bloquear/Desbloquear -->
+      <button @click.stop="el.locked = !el.locked" 
+              class="transition-colors p-0.5 rounded hover:bg-black/5 dark:hover:bg-white/10 shrink-0" 
+              :class="el.locked ? 'text-accent-neon' : 'text-gray-400 dark:text-white/30 hover:text-gray-600 dark:hover:text-white/60'">
+        <span class="material-symbols-outlined text-base">{{ el.locked ? 'lock' : 'lock_open' }}</span>
+      </button>
+
+      <!-- Icono de tipo de capa -->
+      <span class="material-symbols-outlined text-lg shrink-0 transition-colors" 
+            :class="selectedId === el.id ? 'text-accent-neon' : 'text-gray-400 dark:text-white/40'">
+        {{ el.type === 'text' ? 'title' : el.type === 'image' ? 'image' : 'qr_code' }}
+      </span>
+
+      <!-- Nombre o contenido de la capa -->
+      <span class="text-xs font-medium truncate"
+            :class="selectedId === el.id ? 'font-semibold text-gray-900 dark:text-white' : 'text-gray-700 dark:text-white/80'">
+        {{ el.type === 'text' ? (el.content || 'Texto vacío') : el.type === 'image' ? 'Firma/Imagen' : 'QR Validación' }}
+      </span>
+    </div>
+
+    <!-- Lado Derecho: Acciones al hacer Hover (Visibilidad, Capas y Eliminar) -->
+    <div class="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+      <!-- Ocultar/Mostrar -->
+      <button @click.stop="el.hidden = !el.hidden" 
+              class="p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 text-gray-400 dark:text-white/40 hover:text-accent-neon transition-colors"
+              :title="el.hidden ? 'Mostrar capa' : 'Ocultar capa'">
+        <span class="material-symbols-outlined text-sm">{{ el.hidden ? 'visibility_off' : 'visibility' }}</span>
+      </button>
+
+      <!-- Bajar Capa -->
+      <button @click.stop="moveLayer(index, -1)" 
+              :disabled="index === 0" 
+              title="Bajar capa" 
+              class="p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 text-gray-400 dark:text-white/40 hover:text-accent-neon disabled:opacity-20 transition-colors">
+        <span class="material-symbols-outlined text-sm">keyboard_arrow_down</span>
+      </button>
+
+      <!-- Subir Capa -->
+      <button @click.stop="moveLayer(index, 1)" 
+              :disabled="index === elements.length - 1" 
+              title="Subir capa" 
+              class="p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 text-gray-400 dark:text-white/40 hover:text-accent-neon disabled:opacity-20 transition-colors">
+        <span class="material-symbols-outlined text-sm">keyboard_arrow_up</span>
+      </button>
+
+      <!-- Eliminar Capa -->
+      <button @click.stop="removeElement(index)" 
+              class="p-1 rounded hover:bg-red-500/10 text-gray-400 dark:text-white/40 hover:text-red-500 transition-colors"
+              title="Eliminar capa">
+        <span class="material-symbols-outlined text-sm">delete</span>
+      </button>
+    </div>
+
+  </div>
+</div>
         </div>
       </div>
 
@@ -194,7 +225,7 @@
                         top: el.y + 'px',
                         fontSize: el.type === 'text' ? el.size + 'px' : 'inherit',
                         color: el.type === 'text' ? el.color : 'inherit',
-                        fontFamily: el.fontFamily + ', sans-serif',
+                        fontFamily: el.fontFamily || 'sans-serif',
                         fontWeight: el.bold ? 'bold' : 'normal',
                         fontStyle: el.italic ? 'italic' : 'normal',
                         textAlign: el.textAlign || 'left',
@@ -208,7 +239,7 @@
                      @mousedown="!el.locked && startDrag($event, el)">
                     
                     <template v-if="el.type === 'text'">
-                        <div class="whitespace-pre-wrap break-words w-full h-full" :style="{ lineHeight: '1.2' }">
+                        <div class="whitespace-pre-wrap break-words w-full h-full flex flex-col justify-start" :style="{ lineHeight: '1.2' }">
                             {{ renderText(el.content) }}
                         </div>
                     </template>
@@ -218,8 +249,8 @@
                     </template>
 
                     <template v-else-if="el.type === 'qr'">
-                        <div class="w-full h-full bg-black/5 flex items-center justify-center">
-                            <span class="material-symbols-outlined text-4xl text-on-surface/20">qr_code_2</span>
+                        <div class="w-full h-full bg-white rounded-sm overflow-hidden border border-black/5">
+                            <img :src="getDemoQrPlaceholder()" class="w-full h-full object-contain pointer-events-none" />
                         </div>
                     </template>
                     <!-- Control Label -->
@@ -236,9 +267,8 @@
                         <div class="absolute top-1/2 -right-2 -translate-y-1/2 w-3 h-8 bg-accent-neon rounded-full cursor-ew-resize z-30 shadow-neon-sm"
                              @mousedown.stop="startResize($event, el, 'width')"></div>
                         
-                        <!-- Bottom handle (for height/images) -->
-                        <div v-if="el.type !== 'text'" 
-                             class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-8 h-3 bg-accent-neon rounded-full cursor-ns-resize z-30 shadow-neon-sm"
+                        <!-- Bottom handle (height) -->
+                        <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-8 h-3 bg-accent-neon rounded-full cursor-ns-resize z-30 shadow-neon-sm"
                              @mousedown.stop="startResize($event, el, 'height')"></div>
 
                         <!-- Corner handle (proportional) -->
@@ -268,10 +298,20 @@
                         <p class="text-[10px] font-bold text-on-surface/40 uppercase mb-2">Contenido (Multilinea)</p>
                         <div class="flex flex-col gap-2">
                             <textarea v-model="selectedElement.content" class="input-cyber !py-2 !px-4 !rounded-xl text-sm min-h-[80px] w-full resize-none" placeholder="Texto..."></textarea>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <p class="text-[10px] font-bold text-on-surface/40 uppercase mb-1">Ancho (px)</p>
+                                    <input type="number" v-model="selectedElement.width" class="input-cyber !py-2 !px-3 !rounded-xl text-xs w-full" />
+                                </div>
+                                <div>
+                                    <p class="text-[10px] font-bold text-on-surface/40 uppercase mb-1">Alto (px)</p>
+                                    <input type="number" v-model="selectedElement.height" class="input-cyber !py-2 !px-3 !rounded-xl text-xs w-full" />
+                                </div>
+                            </div>
                             <div class="flex flex-wrap gap-1">
                                 <button v-for="tag in ['{{estudiante}}', '{{curso}}', '{{categoria}}', '{{nivel}}', '{{tipo_curso}}', '{{fecha}}', '{{codigo}}', '{{instructor}}', '{{ci}}', '{{telefono}}']" :key="tag" 
                                         @click="selectedElement.content += tag"
-                                        class="px-2 py-1 bg-accent-neon/10 hover:bg-accent-neon/20 rounded-lg text-[10px] font-black text-accent-neon transition-colors ">
+                                        class="px-2 py-1 bg-accent-neon/10 hover:bg-accent-neon/20 rounded-lg text-[11px] font-black text-accent-solar transition-colors ">
                                     {{ tag.slice(2, -2) }}
                                 </button>
                             </div>
@@ -280,14 +320,21 @@
 
                     <div class="w-48">
                         <p class="text-[10px] font-bold text-on-surface/40 uppercase mb-2">Tipografía Profesional</p>
-                        <select v-model="selectedElement.fontFamily" class="input-cyber !py-2 !px-4 !rounded-xl text-xs bg-transparent w-full">
-                            <optgroup label="Estándar PDF">
-                                <option value="Helvetica">Helvetica (Moderno)</option>
-                                <option value="Times-Roman">Times New Roman (Clásico)</option>
-                                <option value="Courier">Courier (Máquina)</option>
+                        <select v-model="selectedElement.fontFamily"
+                                class="input-cyber !py-2 !px-4 !rounded-xl text-xs w-full appearance-none"
+                                style="background-color: var(--surface-container); color: var(--on-surface);">
+                            <optgroup label="Fuentes comunes">
+                                <option v-for="font in standardFonts" :key="font.family" :value="font.family" :style="{ fontFamily: font.family, color: 'var(--on-surface)' }">
+                                    {{ font.name }}
+                                </option>
+                            </optgroup>
+                            <optgroup label="Fuentes compatibles PDF">
+                                <option value="Helvetica" style="font-family: Helvetica, Arial, sans-serif;">Helvetica</option>
+                                <option value="Times-Roman" style="font-family: 'Times New Roman', Times, serif;">Times New Roman</option>
+                                <option value="Courier" style="font-family: 'Courier New', Courier, monospace;">Courier</option>
                             </optgroup>
                             <optgroup label="Google Fonts (Elegantes)">
-                                <option v-for="font in googleFonts" :key="font.family" :value="font.family" :style="{ fontFamily: font.family }">
+                                <option v-for="font in googleFonts" :key="font.family" :value="font.family" :style="{ fontFamily: font.family, color: 'var(--on-surface)' }">
                                     {{ font.name }}
                                 </option>
                             </optgroup>
@@ -413,10 +460,23 @@ const selectedFormat = ref('A4');
 const orientation = ref('landscape');
 
 // Dimensions (Logical internal size)
-const naturalWidth = ref(1000);
-const naturalHeight = ref(707);
+const naturalWidth = ref(pageFormats.A4.width);
+const naturalHeight = ref(pageFormats.A4.height);
 
 // Professional Fonts
+const standardFonts = [
+    { name: 'Arial', family: 'Arial, Helvetica, sans-serif' },
+    { name: 'Arial Black', family: 'Arial Black, Gadget, sans-serif' },
+    { name: 'Helvetica', family: 'Helvetica, Arial, sans-serif' },
+    { name: 'Times New Roman', family: 'Times New Roman, Times, serif' },
+    { name: 'Georgia', family: 'Georgia, serif' },
+    { name: 'Courier New', family: 'Courier New, Courier, monospace' },
+    { name: 'Verdana', family: 'Verdana, Geneva, sans-serif' },
+    { name: 'Tahoma', family: 'Tahoma, Geneva, sans-serif' },
+    { name: 'Trebuchet MS', family: 'Trebuchet MS, Helvetica, sans-serif' },
+    { name: 'Palatino', family: 'Palatino Linotype, Book Antiqua, Palatino, serif' }
+];
+
 const googleFonts = [
     { name: 'Roboto', family: 'Roboto' },
     { name: 'Montserrat', family: 'Montserrat' },
@@ -436,6 +496,8 @@ const googleFonts = [
 // Responsive Scaling
 const mainCanvasWrapper = ref(null);
 const canvasScale = ref(0.8);
+const sampleQrUrl = ref('');
+const sampleQrLoading = ref(false);
 
 const canvasScaleStyle = computed(() => {
     return {
@@ -475,18 +537,14 @@ const selectedElement = computed(() => elements.value.find(el => el.id === selec
 const applyFormat = (key) => {
     selectedFormat.value = key;
     const fmt = pageFormats[key];
-    
-    // Mantener 1000 como base para no romper elementos existentes
-    // Pero ajustar el alto según la proporción real del papel
-    let ratio;
+
     if (orientation.value === 'landscape') {
-        ratio = fmt.height / fmt.width;
+        naturalWidth.value = fmt.width;
+        naturalHeight.value = fmt.height;
     } else {
-        ratio = fmt.width / fmt.height;
+        naturalWidth.value = fmt.height;
+        naturalHeight.value = fmt.width;
     }
-    
-    naturalHeight.value = Math.round(1000 * ratio);
-    naturalWidth.value = 1000;
     
     setTimeout(updateScale, 50);
 };
@@ -543,6 +601,46 @@ const onImageLoad = (event) => {
   updateScale();
 };
 
+const loadSampleQr = async () => {
+    sampleQrLoading.value = true;
+    try {
+        const response = await api.get('/certificados/sample-qr', { responseType: 'blob' });
+        const blob = new Blob([response.data], { type: response.data.type || 'image/svg+xml' });
+
+        if (sampleQrUrl.value) {
+            URL.revokeObjectURL(sampleQrUrl.value);
+        }
+        sampleQrUrl.value = URL.createObjectURL(blob);
+    } catch (error) {
+        console.warn('No se pudo cargar el QR de ejemplo', error);
+        sampleQrUrl.value = '';
+    } finally {
+        sampleQrLoading.value = false;
+    }
+};
+
+const getDemoQrPlaceholder = () => {
+    if (sampleQrUrl.value) return sampleQrUrl.value;
+    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+        <rect width="200" height="200" fill="#ffffff"/>
+        <rect x="10" y="10" width="40" height="40" fill="#111111"/>
+        <rect x="30" y="30" width="20" height="20" fill="#ffffff"/>
+        <rect x="10" y="70" width="20" height="20" fill="#111111"/>
+        <rect x="50" y="70" width="20" height="20" fill="#111111"/>
+        <rect x="90" y="70" width="20" height="20" fill="#111111"/>
+        <rect x="130" y="70" width="20" height="20" fill="#111111"/>
+        <rect x="150" y="70" width="20" height="20" fill="#111111"/>
+        <rect x="10" y="110" width="20" height="20" fill="#111111"/>
+        <rect x="50" y="110" width="60" height="20" fill="#111111"/>
+        <rect x="130" y="110" width="20" height="20" fill="#111111"/>
+        <rect x="170" y="110" width="20" height="20" fill="#111111"/>
+        <rect x="70" y="150" width="20" height="20" fill="#111111"/>
+        <rect x="110" y="150" width="20" height="20" fill="#111111"/>
+        <rect x="150" y="150" width="20" height="20" fill="#111111"/>
+      </svg>` )}`;
+};
+
 const addElement = (type) => {
     const id = generateId();
     const base = {
@@ -557,7 +655,7 @@ const addElement = (type) => {
             content: 'Nuevo Texto',
             size: 32,
             width: 400,
-            height: 100,
+            height: 50,
             color: '#1a1a1a',
             fontFamily: 'Helvetica',
             bold: false,
@@ -659,13 +757,13 @@ const renderText = (content) => {
     if (!content) return '';
     return content
         .replace('{{estudiante}}', 'JUAN PÉREZ GARCÍA')
-        .replace('{{curso}}', 'DIPLOMADO EN CIBERSEGURIDAD')
+        .replace('{{curso}}', 'ENERGIAS RENOVABLES')
         .replace('{{categoria}}', 'TECNOLOGÍA')
         .replace('{{nivel}}', 'AVANZADO')
         .replace('{{tipo_curso}}', 'VIRTUAL')
         .replace('{{fecha}}', '04 de Mayo, 2026')
-        .replace('{{codigo}}', 'EV-999-XYZ')
-        .replace('{{instructor}}', 'DR. ROBERTO CARLOS')
+        .replace('{{codigo}}', 'EV01260004')
+        .replace('{{instructor}}', 'LIC. ROBERTO CARLOS')
         .replace('{{ci}}', '12345678')
         .replace('{{telefono}}', '+591 77712345');
 };
@@ -690,18 +788,27 @@ const startResize = (event, el, mode = 'corner') => {
 
         if (mode === 'width' || mode === 'corner') {
             el.width = Math.max(20, initialWidth + dx);
+            if (el.type === 'qr') {
+                el.height = el.width;
+                el.size = el.width;
+            }
         }
         
         if (mode === 'height' || mode === 'corner') {
-            if (el.type !== 'text') {
-                if (mode === 'corner' && (el.type === 'image' || el.type === 'qr')) {
-                    // Mantenemos proporción para imágenes y QR si usamos la esquina
+            if (el.type === 'image') {
+                if (mode === 'corner') {
                     const ratio = initialHeight / initialWidth;
                     el.height = el.width * ratio;
-                    if (el.type === 'qr') el.size = el.width;
                 } else {
                     el.height = Math.max(20, initialHeight + dy);
                 }
+            } else if (el.type === 'qr') {
+                const nextHeight = Math.max(20, initialHeight + dy);
+                el.height = nextHeight;
+                el.width = nextHeight;
+                el.size = nextHeight;
+            } else {
+                el.height = Math.max(20, initialHeight + dy);
             }
         }
     };
@@ -855,11 +962,17 @@ const handleKeyDown = (e) => {
 onMounted(() => {
     fetchData();
     loadGoogleFonts();
+    fetchData();
+    loadGoogleFonts();
+    loadSampleQr();
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('resize', handleResize);
 });
 
 onUnmounted(() => {
+    if (sampleQrUrl.value) {
+        URL.revokeObjectURL(sampleQrUrl.value);
+    }
     window.removeEventListener('keydown', handleKeyDown);
     window.removeEventListener('resize', handleResize);
 });

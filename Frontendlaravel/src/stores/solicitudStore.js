@@ -1,12 +1,19 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import api from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
 
 export const useSolicitudStore = defineStore('solicitud', () => {
   const pendingCount = ref(0)
   const loading = ref(false)
 
   const fetchPendingCount = async () => {
+    const authStore = useAuthStore()
+    if (!authStore.canAccess('INSCRIPCIONES') && !authStore.canAccess('SOLICITUDES')) {
+      pendingCount.value = 0
+      return
+    }
+
     loading.value = true
     try {
       const res = await api.get('/inscripciones')

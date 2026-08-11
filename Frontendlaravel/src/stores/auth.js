@@ -2,11 +2,32 @@ import { defineStore } from 'pinia';
 import api from '@/services/api';
 import { getDeviceInfo } from '@/services/device';
 
+const REFRESH_MARGIN_SECONDS = 60;
+const MIN_REFRESH_DELAY_MS = 5000;
+
+function parseJwt(token) {
+  if (!token) return null;
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => `%${('00' + c.charCodeAt(0).toString(16)).slice(-2)}`)
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.warn('Unable to parse JWT token', error);
+    return null;
+  }
+}
+
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: JSON.parse(localStorage.getItem('user')) || null,
     accessToken: localStorage.getItem('access_token') || null,
-    refreshToken: localStorage.getItem('refresh_token') || null,
+    refreshTimer: null,
   }),
 
   getters: {
@@ -24,7 +45,10 @@ export const useAuthStore = defineStore('auth', {
         const desc = state.user.rol.descripcion;
         if (desc && desc.startsWith('{')) {
           const data = JSON.parse(desc);
-          return data.permisos?.includes(moduloId);
+          const permisos = Array.isArray(data.permisos)
+            ? data.permisos.map(p => String(p).toUpperCase().trim())
+            : [];
+          return permisos.includes(String(moduloId).toUpperCase().trim());
         }
       } catch (e) {
         console.warn('Error parsing permissions for role:', roleName);
@@ -45,14 +69,7 @@ export const useAuthStore = defineStore('auth', {
         });
         const { access_token, refresh_token, user } = response.data;
 
-        this.accessToken = access_token;
-        this.refreshToken = refresh_token;
-        this.user = user;
-
-        localStorage.setItem('access_token', access_token);
-        localStorage.setItem('refresh_token', refresh_token);
-        localStorage.setItem('user', JSON.stringify(user));
-
+        this.setAuth({ access_token, refresh_token, user });
         return user;
       } catch (error) {
         throw error;
@@ -70,14 +87,7 @@ export const useAuthStore = defineStore('auth', {
         });
         const { access_token, refresh_token, user } = response.data;
 
-        this.accessToken = access_token;
-        this.refreshToken = refresh_token;
-        this.user = user;
-
-        localStorage.setItem('access_token', access_token);
-        localStorage.setItem('refresh_token', refresh_token);
-        localStorage.setItem('user', JSON.stringify(user));
-
+        this.setAuth({ access_token, refresh_token, user });
         return user;
       } catch (error) {
         throw error;
@@ -98,21 +108,19 @@ export const useAuthStore = defineStore('auth', {
 
     async refreshAccessToken() {
       try {
-        if (!this.refreshToken || !this.user) return null;
+        if (!this.user) return null;
 
         const response = await api.post('/auth/refresh', {
           userId: this.user.id,
-          refreshToken: this.refreshToken,
         });
 
-        const { access_token, refresh_token } = response.data;
+        const { access_token } = response.data;
 
         this.accessToken = access_token;
-        this.refreshToken = refresh_token;
 
         localStorage.setItem('access_token', access_token);
-        localStorage.setItem('refresh_token', refresh_token);
 
+        this.scheduleRefresh();
         return access_token;
       } catch (error) {
         this.clearAuth();
@@ -173,15 +181,8 @@ export const useAuthStore = defineStore('auth', {
           sistema_operativo: deviceInfo.os
         });
         
-        const { access_token, refresh_token, user } = response.data;
-        this.accessToken = access_token;
-        this.refreshToken = refresh_token;
-        this.user = user;
-
-        localStorage.setItem('access_token', access_token);
-        localStorage.setItem('refresh_token', refresh_token);
-        localStorage.setItem('user', JSON.stringify(user));
-
+        const { access_token, user } = response.data;
+        this.setAuth({ access_token, user });
         return user;
       } catch (error) {
         throw error;
@@ -189,22 +190,59 @@ export const useAuthStore = defineStore('auth', {
     },
 
     setAuth(data) {
-      const { access_token, refresh_token, user } = data;
+      const { access_token, user } = data;
       this.accessToken = access_token;
-      this.refreshToken = refresh_token;
       this.user = user;
 
       localStorage.setItem('access_token', access_token);
-      localStorage.setItem('refresh_token', refresh_token);
       localStorage.setItem('user', JSON.stringify(user));
+      this.scheduleRefresh();
+    },
+
+    initAuth() {
+      if (this.accessToken && this.refreshToken && this.user) {
+        this.scheduleRefresh();
+      }
+    },
+
+    clearRefreshTimer() {
+      if (this.refreshTimer) {
+        clearTimeout(this.refreshTimer);
+        this.refreshTimer = null;
+      }
+    },
+
+    scheduleRefresh() {
+      this.clearRefreshTimer();
+
+      if (!this.accessToken) return;
+      const payload = parseJwt(this.accessToken);
+      if (!payload?.exp) return;
+
+      const expiresAtMs = payload.exp * 1000;
+      const refreshAtMs = expiresAtMs - REFRESH_MARGIN_SECONDS * 1000;
+      const now = Date.now();
+      const delay = Math.max(refreshAtMs - now, MIN_REFRESH_DELAY_MS);
+
+      if (expiresAtMs <= now) {
+        this.refreshAccessToken().catch(() => {});
+        return;
+      }
+
+      this.refreshTimer = setTimeout(async () => {
+        try {
+          await this.refreshAccessToken();
+        } catch (error) {
+          console.error('Auto refresh failed:', error);
+        }
+      }, delay);
     },
 
     clearAuth() {
+      this.clearRefreshTimer();
       this.user = null;
       this.accessToken = null;
-      this.refreshToken = null;
       localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
       localStorage.removeItem('user');
     },
   },

@@ -121,7 +121,7 @@ class CertificadoPlantillaController extends Controller
         
         return str_replace(
             ['{{estudiante}}', '{{curso}}', '{{categoria}}', '{{nivel}}', '{{tipo_curso}}', '{{fecha}}', '{{codigo}}', '{{instructor}}', '{{ci}}', '{{telefono}}'],
-            ['JUAN PÉREZ GARCÍA', 'CURSO DE ENERGÍA SOLAR FOTOVOLTAICA', 'ENERGÍA RENOVABLE', 'INTERMEDIO', 'GRABADO', date('d/m/Y'), 'CERT-2026-XYZ', 'ING. CARLOS GÓMEZ', '1234567 LP', '+591 77777777'],
+            ['JUAN PÉREZ GARCÍA', 'CURSO DE ENERGÍA SOLAR FOTOVOLTAICA', 'ENERGÍA RENOVABLE', 'INTERMEDIO', 'GRABADO', date('d/m/Y'), 'EV01260004', 'ING. CARLOS GÓMEZ', '1234567 LP', '+591 77777777'],
             $content
         );
     }

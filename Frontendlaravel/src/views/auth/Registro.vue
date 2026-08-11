@@ -460,19 +460,3 @@ input::-ms-clear {
   animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
 }
 </style>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

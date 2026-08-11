@@ -76,7 +76,7 @@
             <div class="w-full max-w-5xl h-full flex flex-col gap-4 animate-in zoom-in duration-300">
                 <div class="flex justify-between items-center bg-white/5 p-4 rounded-2xl border-white/10">
                     <h3 class="text-white font-bold uppercase tracking-widest text-xs">Vista Previa del Certificado</h3>
-                    <button @click="previewingUrl = null" class="p-2 hover:bg-white/10 rounded-xl text-white transition-colors">
+                    <button @click="closePreviewModal" class="p-2 hover:bg-white/10 rounded-xl text-white transition-colors">
                         <span class="material-symbols-outlined">close</span>
                     </button>
                 </div>
@@ -84,7 +84,7 @@
                     <iframe :src="previewingUrl" class="w-full h-full border-0"></iframe>
                 </div>
                 <div class="flex justify-center gap-4">
-                    <button @click="previewingUrl = null" class="btn-premium bg-white/10 !text-white border-white/10">Cerrar Vista</button>
+                    <button @click="closePreviewModal" class="btn-premium bg-white/10 !text-white border-white/10">Cerrar Vista</button>
                     <a :href="previewingUrl" download="preview.pdf" class="btn-premium btn-primary-neon">Descargar PDF</a>
                 </div>
             </div>
@@ -108,7 +108,7 @@ const fetchCursos = async () => {
     // Necesitamos los cursos con su información de plantilla
     const response = await api.get('/cursos');
     cursos.value = response.data;
-    console.log('Cursos cargados en Admin:', cursos.value.map(c => ({ id: c.id, hasTemplate: !!c.plantilla_certificado })));
+    //console.log('Cursos cargados en Admin:', cursos.value.map(c => ({ id: c.id, hasTemplate: !!c.plantilla_certificado })));
   } catch (error) {
     console.error('Error fetching courses:', error);
   } finally {
@@ -130,12 +130,25 @@ const filteredCursos = computed(() => {
   return cursos.value.filter(c => c.titulo.toLowerCase().includes(q));
 });
 
-const previewPdf = (plantillaId) => {
+const previewPdf = async (plantillaId) => {
   if (!plantillaId) return;
-  const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:3000').replace(/\/$/, '');
-  const timestamp = new Date().getTime();
-  const token = localStorage.getItem('access_token') || '';
-  previewingUrl.value = `${baseUrl}/certificados/preview/${plantillaId}?t=${timestamp}&token=${token}`;
+
+  try {
+    const response = await api.get(`/certificados/preview/${plantillaId}`, { responseType: 'blob' });
+    const blob = new Blob([response.data], { type: response.data.type || 'application/pdf' });
+    if (previewingUrl.value) URL.revokeObjectURL(previewingUrl.value);
+    previewingUrl.value = URL.createObjectURL(blob);
+  } catch (error) {
+    console.error('Error opening preview:', error);
+    previewingUrl.value = null;
+  }
+};
+
+const closePreviewModal = () => {
+  if (previewingUrl.value) {
+    URL.revokeObjectURL(previewingUrl.value);
+  }
+  previewingUrl.value = null;
 };
 
 onMounted(() => {
